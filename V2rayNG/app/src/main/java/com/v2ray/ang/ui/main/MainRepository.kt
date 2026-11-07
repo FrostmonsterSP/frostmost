@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import com.v2ray.ang.AngApplication
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.core.LauncherManager
 import com.v2ray.ang.dto.ConnectionTestResult
 import com.v2ray.ang.dto.RealPingResult
 import com.v2ray.ang.dto.SubscriptionUpdateResult
@@ -213,6 +214,8 @@ class MainRepository(
 
     override fun share2Clipboard(guid: String): Boolean =
         AngConfigManager.share2Clipboard(app, guid) == 0
+
+    override fun restartService() = LauncherManager.restartService(app)
 
     override fun sendMsg2Service(msgId: Int, content: String) =
         MessageHelper.sendMsg2Service(app, msgId, content)

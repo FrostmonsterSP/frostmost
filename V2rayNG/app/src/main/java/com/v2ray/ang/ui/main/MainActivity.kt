@@ -9,9 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.v2ray.ang.AngApplication
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
@@ -97,15 +95,6 @@ class MainActivity : HelperBaseComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainViewModel.homeEffects.collect { effect ->
-                    when (effect) {
-                        HomeEffect.RestartService -> LauncherManager.restartService(this@MainActivity)
-                    }
-                }
-            }
-        }
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
     }
@@ -125,7 +114,6 @@ class MainActivity : HelperBaseComponentActivity() {
                     is MainAction.ImportManually -> importManually(action.type)
                     MainAction.RestartService -> LauncherManager.restartServiceOrStart(this, ::requestServiceStart)
                     MainAction.LocateSelectedServer -> mainViewModel.triggerLocateSelectedServer()
-                    is MainAction.SelectServer -> setSelectServer(action.guid)
                     is MainAction.EditServer -> editServer(action.guid, action.profile)
                     is MainAction.ShareClipboard -> shareToClipboard(action.guid)
                     is MainAction.ShareFullContent -> shareFullContentAsync(action.guid)
@@ -180,6 +168,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun handleFabAction() {
         if (mainViewModel.uiState.value.isRunning) {
+            mainViewModel.userStopped()
             LauncherManager.stopService(this)
         } else {
             requestServiceStart()
@@ -211,7 +200,7 @@ class MainActivity : HelperBaseComponentActivity() {
             checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}
         }
         mainViewModel.beginConnecting()
-        LauncherManager.startService(this)
+        if (!LauncherManager.startService(this)) mainViewModel.startRejected()
     }
 
     private fun importManually(createConfigType: Int) {
@@ -287,14 +276,6 @@ class MainActivity : HelperBaseComponentActivity() {
             putExtra("subscriptionId", mainViewModel.uiState.value.selectedGroupId)
         }
         profileEditorLauncher.launch(intent)
-    }
-
-    private fun setSelectServer(guid: String) {
-        val selected = mainViewModel.uiState.value.selectedGuid
-        if (guid != selected) {
-            mainViewModel.updateSelectedGuid(guid)
-            LauncherManager.restartService(this)
-        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {

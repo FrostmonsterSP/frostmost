@@ -43,9 +43,11 @@ class PendingSwitch(
     }
 }
 
-/** A failed real-ping: no positive delay or an error message. Cancelled/stale results never reach it. */
-internal fun isServerUnreachable(delayMillis: Long, errorMessage: String): Boolean =
-    delayMillis <= 0 || errorMessage.isNotEmpty()
+/**
+ * A failed real-ping is `delayMillis <= 0`. The error text is ignored: the core keeps a non-empty
+ * message after a successful fallback, so it cannot mean failure on its own.
+ */
+internal fun isServerUnreachable(delayMillis: Long): Boolean = delayMillis <= 0
 
 /** Issues that describe the current connection attempt and go stale when the connection or server changes. */
 internal fun HomeIssue?.isConnectionIssue(): Boolean =

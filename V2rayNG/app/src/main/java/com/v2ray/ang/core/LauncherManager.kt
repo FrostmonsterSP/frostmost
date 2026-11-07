@@ -36,7 +36,8 @@ object LauncherManager {
         return true
     }
 
-    fun startService(context: Context, guid: String? = null) {
+    /** Returns false when the start could not be requested (setup failed, the user was told why). */
+    fun startService(context: Context, guid: String? = null): Boolean {
         LogUtil.i(AppConfig.TAG, "LauncherManager: startService from ${context::class.java.simpleName}")
 
         if (guid != null) {
@@ -48,7 +49,9 @@ object LauncherManager {
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: ${e.message}", e)
             context.toast(e.message ?: e.javaClass.simpleName)
+            return false
         }
+        return true
     }
 
     fun stopService(context: Context) {

@@ -67,11 +67,10 @@ class PendingSwitchTest {
 class HomeIssueDecisionsTest {
 
     @Test
-    fun unreachableWhenNoPositiveDelayOrErrorPresent() {
-        assertTrue(isServerUnreachable(0, ""))
-        assertTrue(isServerUnreachable(-1, ""))
-        assertTrue(isServerUnreachable(120, "timeout"))
-        assertTrue(!isServerUnreachable(120, ""))
+    fun unreachableOnlyWhenNoPositiveDelay() {
+        assertTrue(isServerUnreachable(0))
+        assertTrue(isServerUnreachable(-1))
+        assertTrue(!isServerUnreachable(120))
     }
 
     @Test

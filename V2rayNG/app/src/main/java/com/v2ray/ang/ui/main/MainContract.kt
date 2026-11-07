@@ -80,8 +80,3 @@ sealed interface MainAction {
     data object VpnPermissionDenied : MainAction
     data object ClearHomeIssue : MainAction
 }
-
-/** One-shot commands for the Activity that the ViewModel cannot run itself. */
-sealed interface HomeEffect {
-    data object RestartService : HomeEffect
-}

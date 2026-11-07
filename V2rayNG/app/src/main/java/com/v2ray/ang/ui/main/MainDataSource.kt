@@ -58,6 +58,8 @@ interface MainDataSource : Closeable {
     fun share2QRCode(guid: String): android.graphics.Bitmap?
     fun share2Clipboard(guid: String): Boolean
 
+    /** Restarts the active daemon; a no-op when none runs. Same command in VPN, proxy-only and root mode. */
+    fun restartService()
     fun sendMsg2Service(msgId: Int, content: String)
     fun sendMsg2TestService(msg: TestServiceMessage, requestId: String? = null)
     fun cancelAllPing()
