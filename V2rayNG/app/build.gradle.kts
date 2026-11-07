@@ -10,11 +10,17 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.v2ray.ang"
+        applicationId = property("fork.applicationId") as String
         minSdk = 24
         targetSdk = 37
         versionCode = 755
         versionName = "2.3.15"
+
+        buildConfigField("String", "FORK_APPLICATION_ID", "\"${property("fork.applicationId")}\"")
+        buildConfigField("String", "LINK_SCHEME", "\"${property("fork.linkScheme")}\"")
+        buildConfigField("String", "REPOSITORY", "\"${property("fork.repository")}\"")
+        manifestPlaceholders["linkScheme"] = property("fork.linkScheme") as String
+        resValue("string", "app_name", property("fork.appName") as String)
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
@@ -132,15 +138,7 @@ android {
         generateLocaleConfig = true
         localeFilters += listOf(
             "en",
-            "zh-rCN",
-            "zh-rTW",
-            "vi",
-            "ru",
-            "fa",
-            "ar",
-            "az",
-            "bn",
-            "bqi-rIR"
+            "ru"
         )
     }
 
