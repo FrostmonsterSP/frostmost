@@ -15,5 +15,7 @@ data class SubscriptionItem(
     var userAgent: String? = null,
     var requestHeaders: String? = null,
     var usageInfo: SubscriptionUsageInfo? = null,
+    /** GUID of the server the user picked in this subscription; null until one is chosen. */
+    var selectedGuid: String? = null,
 )
 

@@ -39,14 +39,16 @@ object SubscriptionInfoParser {
         profileTitle: String?,
         supportUrl: String?,
         webPageUrl: String?,
+        announce: String? = null,
         decodeBase64: (String) -> String = Utils::decode,
     ): SubscriptionUsageInfo? {
         val fields = parseUserInfoFields(userInfo)
         val title = decodeTitle(profileTitle, decodeBase64)
         val support = sanitizeLink(supportUrl)
         val webPage = sanitizeLink(webPageUrl)
+        val announcement = decodeTitle(announce, decodeBase64)
 
-        if (fields == null && title == null && support == null && webPage == null) return null
+        if (fields == null && title == null && support == null && webPage == null && announcement == null) return null
 
         return SubscriptionUsageInfo(
             upload = fields?.get("upload") ?: 0,
@@ -56,6 +58,7 @@ object SubscriptionInfoParser {
             title = title,
             supportUrl = support,
             webPageUrl = webPage,
+            announce = announcement,
         )
     }
 

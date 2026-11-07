@@ -16,7 +16,15 @@ class SubscriptionInfoParserTest {
         title: String? = null,
         support: String? = null,
         web: String? = null,
-    ) = SubscriptionInfoParser.parse(userInfo, title, support, web, decode)
+        announce: String? = null,
+    ) = SubscriptionInfoParser.parse(userInfo, title, support, web, announce, decode)
+
+    @Test
+    fun parsesPlainAndBase64Announce() {
+        assertEquals("Работы", parse(announce = "Работы")?.announce)
+        assertEquals("Работы", parse(announce = "base64:0KDQsNCx0L7RgtGL")?.announce)
+        assertNull(parse(announce = "  "))
+    }
 
     @Test
     fun noHeadersGivesNull() {

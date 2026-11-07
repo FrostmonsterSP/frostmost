@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.text.TextUtils
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.core.CoreConfigManager
+import com.v2ray.ang.dto.SubscriptionFailure
+import com.v2ray.ang.dto.SubscriptionImportResult
 import com.v2ray.ang.dto.SubscriptionUpdateResult
 import com.v2ray.ang.dto.UrlContentRequest
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -484,58 +486,14 @@ object AngConfigManager {
                     return SubscriptionUpdateResult(failureCount = 1)
                 }
             }
-            LogUtil.i(AppConfig.TAG, url)
             val userAgent = it.subscription.userAgent
             val requestHeaders = it.subscription.requestHeaders
-            val proxyUsername = SettingsManager.getSocksUsername()
-            val proxyPassword = SettingsManager.getSocksPassword()
 
-            // Account info (traffic, expiry, support link) the panel sends in the response headers.
-            var usageInfo: SubscriptionUsageInfo? = null
-            val captureUsageInfo: (Headers) -> Unit = { headers ->
-                usageInfo = SubscriptionInfoParser.parse(
-                    userInfo = headers["Subscription-Userinfo"],
-                    profileTitle = headers["Profile-Title"],
-                    supportUrl = headers["Support-Url"],
-                    webPageUrl = headers["Profile-Web-Page-Url"],
-                )
-            }
-
-            var configText = try {
-                val httpPort = SettingsManager.getHttpPort()
-                HttpUtil.getUrlContentWithUserAgent(
-                    UrlContentRequest(
-                        url = url,
-                        userAgent = userAgent,
-                        requestHeaders = requestHeaders,
-                        timeout = 15000,
-                        httpPort = httpPort,
-                        proxyUsername = proxyUsername,
-                        proxyPassword = proxyPassword
-                    ),
-                    captureUsageInfo
-                )
-            } catch (e: Exception) {
-                LogUtil.e(AppConfig.ANG_PACKAGE, "Update subscription: proxy not ready or other error", e)
-                ""
-            }
+            val fetched = fetchSubscription(url, userAgent, requestHeaders)
+            val configText = fetched.first
+            val usageInfo = fetched.second
             if (configText.isEmpty()) {
-                configText = try {
-                    HttpUtil.getUrlContentWithUserAgent(
-                        UrlContentRequest(
-                            url = url,
-                            userAgent = userAgent,
-                            requestHeaders = requestHeaders
-                        ),
-                        captureUsageInfo
-                    )
-                } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "Update subscription: Failed to get URL content with user agent", e)
-                    ""
-                }
-            }
-            if (configText.isEmpty()) {
-                return SubscriptionUpdateResult(failureCount = 1)
+                return SubscriptionUpdateResult(failureCount = 1, failure = SubscriptionFailure.DOWNLOAD)
             }
 
             val count = parseConfigViaSub(configText, it.guid, false)
@@ -543,6 +501,7 @@ object AngConfigManager {
                 it.subscription.lastUpdated = System.currentTimeMillis()
                 // Replaced on every successful update so the box disappears if the panel stops sending the headers.
                 it.subscription.usageInfo = usageInfo
+                it.subscription.remarks = resolveImportedRemarks(it.subscription.remarks, usageInfo?.title)
                 MmkvManager.encodeSubscription(it.guid, it.subscription)
                 LogUtil.i(AppConfig.TAG, "Subscription updated: ${it.subscription.remarks}, $count configs")
                 return SubscriptionUpdateResult(
@@ -551,12 +510,112 @@ object AngConfigManager {
                 )
             } else {
                 // Got response but no valid configs parsed
-                return SubscriptionUpdateResult(failureCount = 1)
+                return SubscriptionUpdateResult(failureCount = 1, failure = SubscriptionFailure.NO_SERVERS)
             }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to update config via subscription", e)
             return SubscriptionUpdateResult(failureCount = 1)
         }
+    }
+
+    /**
+     * Downloads a subscription: first through the local proxy, then directly.
+     *
+     * @return The response body (empty on failure) and the account info from the response headers.
+     */
+    private fun fetchSubscription(
+        url: String,
+        userAgent: String?,
+        requestHeaders: String?,
+    ): Pair<String, SubscriptionUsageInfo?> {
+        // Account info (traffic, expiry, support link) the panel sends in the response headers.
+        var usageInfo: SubscriptionUsageInfo? = null
+        val captureUsageInfo: (Headers) -> Unit = { headers ->
+            usageInfo = SubscriptionInfoParser.parse(
+                userInfo = headers["Subscription-Userinfo"],
+                profileTitle = headers["Profile-Title"],
+                supportUrl = headers["Support-Url"],
+                webPageUrl = headers["Profile-Web-Page-Url"],
+                // The header name is an assumption (not a standard); verify against real panels.
+                announce = headers["Announce"],
+            )
+        }
+
+        var configText = try {
+            HttpUtil.getUrlContentWithUserAgent(
+                UrlContentRequest(
+                    url = url,
+                    userAgent = userAgent,
+                    requestHeaders = requestHeaders,
+                    timeout = 15000,
+                    httpPort = SettingsManager.getHttpPort(),
+                    proxyUsername = SettingsManager.getSocksUsername(),
+                    proxyPassword = SettingsManager.getSocksPassword()
+                ),
+                captureUsageInfo
+            )
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.ANG_PACKAGE, "Update subscription: proxy not ready or other error", e)
+            ""
+        }
+        if (configText.isEmpty()) {
+            configText = try {
+                HttpUtil.getUrlContentWithUserAgent(
+                    UrlContentRequest(
+                        url = url,
+                        userAgent = userAgent,
+                        requestHeaders = requestHeaders
+                    ),
+                    captureUsageInfo
+                )
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Update subscription: Failed to get URL content with user agent", e)
+                ""
+            }
+        }
+        return configText to usageInfo
+    }
+
+    /**
+     * Reads the provider's title (`Profile-Title`) with one GET, without saving anything.
+     *
+     * @return The title, or null when the download failed or the panel sent none.
+     */
+    fun previewSubscriptionTitle(url: String): String? {
+        return try {
+            val target = HttpUtil.toIdnUrl(url)
+            if (!Utils.isValidUrl(target) || !Utils.isValidSubUrl(target)) return null
+            fetchSubscription(target, null, null).second?.title
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Failed to preview subscription title", e)
+            null
+        }
+    }
+
+    /**
+     * Imports one subscription URL: an existing subscription is returned as-is; otherwise a record
+     * is created, only it is updated, and it is removed again when nothing could be loaded.
+     */
+    fun importSubscriptionUrl(url: String): SubscriptionImportResult {
+        val existing = MmkvManager.decodeSubscriptions().firstOrNull { it.subscription.url == url }
+        if (existing != null) return decideImport(existing.guid, null)
+
+        val subItem = SubscriptionItem()
+        subItem.remarks = runCatching { URI(Utils.fixIllegalUrl(url)).fragment }.getOrNull() ?: IMPORTED_SUB_REMARKS
+        subItem.url = url
+        val guid = MmkvManager.encodeSubscription("", subItem)
+        var result: SubscriptionImportResult = SubscriptionImportResult.DownloadFailed
+        try {
+            val update = updateConfigViaSub(SubscriptionCache(guid, subItem))
+            result = decideImport(null, update, guid)
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Failed to import subscription $guid", e)
+        } finally {
+            if (result !is SubscriptionImportResult.Added) {
+                MmkvManager.removeSubscription(guid)
+            }
+        }
+        return result
     }
 
     /**
@@ -628,7 +687,7 @@ object AngConfigManager {
         }
         val uri = URI(Utils.fixIllegalUrl(url))
         val subItem = SubscriptionItem()
-        subItem.remarks = uri.fragment ?: "import sub"
+        subItem.remarks = uri.fragment ?: IMPORTED_SUB_REMARKS
         subItem.url = url
         MmkvManager.encodeSubscription("", subItem)
         return 1
@@ -653,5 +712,31 @@ object AngConfigManager {
         } ?: ""
 
         return "$addrPart : ${port ?: ""}"
+    }
+}
+
+/** Automatic name of an imported subscription; replaced by the provider's title when it sends one. */
+private const val IMPORTED_SUB_REMARKS = "import sub"
+
+/** Keeps a name the user chose; only the automatic one is replaced by the provider's [title]. */
+internal fun resolveImportedRemarks(current: String, title: String?): String {
+    val clean = title?.trim().orEmpty()
+    return if (clean.isNotEmpty() && current == IMPORTED_SUB_REMARKS) clean else current
+}
+
+/** Maps the existing record and the update outcome to an import result. */
+internal fun decideImport(
+    existingGuid: String?,
+    update: SubscriptionUpdateResult?,
+    createdGuid: String? = null,
+): SubscriptionImportResult {
+    if (existingGuid != null) return SubscriptionImportResult.AlreadyExists(existingGuid)
+    if (update != null && update.successCount > 0 && createdGuid != null) {
+        return SubscriptionImportResult.Added(createdGuid)
+    }
+    return if (update?.failure == SubscriptionFailure.NO_SERVERS) {
+        SubscriptionImportResult.NoServers
+    } else {
+        SubscriptionImportResult.DownloadFailed
     }
 }
