@@ -21,6 +21,7 @@ import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.NotificationManager
 import com.v2ray.ang.handler.SettingsManager
+import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.root.RootLanSharing
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -141,6 +142,9 @@ class CoreVpnService : VpnService(), ServiceControl {
         val prepare = prepare(this)
         if (prepare != null) {
             LogUtil.e(AppConfig.TAG, "StartCore-VPN: Permission not granted")
+            // The UI cannot tell this from other start failures through this message, so it shows
+            // ServerUnreachable; without it a restart would leave the UI connecting forever.
+            MessageHelper.sendMsg2UI(this, AppConfig.MSG_STATE_START_FAILURE, "")
             return false
         }
 

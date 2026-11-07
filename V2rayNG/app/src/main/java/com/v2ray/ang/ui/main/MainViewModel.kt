@@ -69,11 +69,12 @@ private fun applyTestDelayResultsToRows(
 
 class MainViewModel(
     application: Application,
-    private val dataSource: MainDataSource,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val preloadDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
+    private val dataSource: MainDataSource
 ) : BaseViewModel(application) {
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val preloadDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1)
 
     // ---------- UI state ----------
     private val _uiState = MutableStateFlow(
@@ -115,7 +116,7 @@ class MainViewModel(
     private val switchModel = HomeSwitchModel(
         scope = viewModelScope,
         ports = object : SwitchPorts {
-            override fun restart() = dataSource.restartService()
+            override fun restart(onResult: (handled: Boolean) -> Unit) = dataSource.restartService(onResult)
             override fun applyServer(guid: String) {
                 dataSource.setSelectServer(guid)
                 _uiState.update { it.copy(selectedGuid = guid) }
@@ -822,7 +823,7 @@ class MainViewModel(
         }
     }
 
-    fun updateSelectedGuid(guid: String) {
+    private fun updateSelectedGuid(guid: String) {
         dataSource.setSelectServer(guid)
         dataSource.rememberServer(uiState.value.selectedGroupId, guid)
         _uiState.update { it.copy(selectedGuid = guid) }
@@ -834,7 +835,7 @@ class MainViewModel(
         switchServerJob?.cancel()
         switchModel.onManualSelect()
         updateSelectedGuid(guid)
-        switchModel.restartIfLive()
+        switchModel.restartOnPick()
     }
 
     /** Marks a start request as in flight; cleared by the service result, a denied permission or [startRejected]. */

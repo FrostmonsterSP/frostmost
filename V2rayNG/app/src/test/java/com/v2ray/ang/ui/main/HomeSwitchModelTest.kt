@@ -18,7 +18,11 @@ class HomeSwitchModelTest {
     private class Ports : SwitchPorts {
         var restarts = 0
         val applied = mutableListOf<String>()
-        override fun restart() { restarts++ }
+        var daemonHandles = true
+        override fun restart(onResult: (handled: Boolean) -> Unit) {
+            restarts++
+            onResult(daemonHandles)
+        }
         override fun applyServer(guid: String) { applied += guid }
     }
 
@@ -121,7 +125,7 @@ class HomeSwitchModelTest {
     @Test
     fun swipeDuringRestartSurvivesTheRestartsStopSuccess() = runTest {
         val p = Ports(); val m = model(p); m.connected()
-        m.restartIfLive()                       // e.g. a manual server pick
+        m.restartOnPick()                       // e.g. a manual server pick
         m.onStopSuccess()                       // stop half of that restart
         assertTrue(m.state.value.isConnecting)
         m.beginSwitch("a", "sa"); m.onSwitchResolved("b", "sb")
@@ -195,16 +199,55 @@ class HomeSwitchModelTest {
     fun manualSelectDropsWindowAndRestartsOnce() = runTest {
         val p = Ports(); val m = model(p); m.connected()
         m.beginSwitch("a", "sa"); m.onSwitchResolved("b", "sb")
-        m.onManualSelect(); m.restartIfLive()
+        m.onManualSelect(); m.restartOnPick()
         advanceUntilIdle()
         assertEquals(1, p.restarts); assertNull(m.pendingId.value)
     }
 
     @Test
-    fun restartIfLiveDoesNothingWhenStopped() = runTest {
+    fun pickWhileStoppedStillSendsRestartButDoesNotRaiseConnecting() = runTest {
         val p = Ports(); val m = model(p)
-        m.restartIfLive()
-        assertEquals(0, p.restarts); assertFalse(m.state.value.isConnecting)
+        m.restartOnPick()
+        assertEquals(1, p.restarts); assertFalse(m.state.value.isConnecting)
+    }
+
+    @Test
+    fun unhandledRestartDropsTheFlagItRaised() = runTest {
+        val p = Ports().apply { daemonHandles = false }; val m = model(p); m.connected()
+        m.restartOnPick()
+        assertFalse(m.state.value.isConnecting)
+        m.onStopSuccess() // a later real stop must be treated as a user stop, not a restart half
+        m.beginConnecting(); m.onStopSuccess()
+        assertFalse(m.state.value.isConnecting)
+    }
+
+    @Test
+    fun unhandledRestartKeepsConnectingOfAStartInFlight() = runTest {
+        val p = Ports().apply { daemonHandles = false }; val m = model(p)
+        m.beginConnecting()
+        m.restartOnPick()
+        assertTrue(m.state.value.isConnecting)
+    }
+
+    @Test
+    fun undoFromEmptyOriginGroupFallsBackToOriginServer() = runTest {
+        val p = Ports(); val m = model(p); m.connected()
+        m.beginSwitch("a", "sa"); m.onSwitchResolved("empty", null)
+        m.beginSwitch("empty", "sa"); m.onSwitchResolved("b", "sb")
+        val origin = m.beginUndo { true }!!
+        assertEquals(HomeSwitchModel.Origin("empty", "sa"), origin)
+        m.onUndoResolved(origin, null)
+        advanceUntilIdle()
+        assertEquals("sa", p.applied.last()); assertEquals(0, p.restarts)
+    }
+
+    @Test
+    fun manualPickDropsStaleConnectionIssueWhileDisconnected() = runTest {
+        val m = model(Ports())
+        m.onStartFailure()
+        assertEquals(HomeIssue.ServerUnreachable, m.state.value.homeIssue)
+        m.onManualSelect()
+        assertNull(m.state.value.homeIssue)
     }
 
     // ---------- issues ----------

@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.update
 
 /** Side effects the model asks its owner to perform; implemented by the ViewModel over its data source. */
 internal interface SwitchPorts {
-    /** Restarts the active daemon (same message in VPN, proxy-only and root mode). */
-    fun restart()
+    /** Restarts the active daemon (same message in all modes); [onResult] is false when no daemon got it. */
+    fun restart(onResult: (handled: Boolean) -> Unit)
 
     /** Persists [guid] as the selected server and publishes it to the UI state. */
     fun applyServer(guid: String)
@@ -98,21 +98,26 @@ internal class HomeSwitchModel(
 
     /** [resolved] is the origin group's server after re-resolving the origin guid; null if it has none. */
     fun onUndoResolved(origin: Origin, resolved: String?) {
-        resolved ?: return
-        applyServer(resolved)
+        // An empty origin group resolves to nothing; fall back to the server the core still runs.
+        val target = resolved ?: origin.guid ?: return
+        applyServer(target)
         // The core still runs the origin server; if that server is gone the core must follow the new choice.
-        if (resolved != origin.guid) restartNow()
+        if (target != origin.guid) restartNow()
     }
 
     /** A deliberate server pick replaces the window: undo would no longer mean anything. */
     fun onManualSelect() {
         pending.cancel()
         origin = null
+        clearConnectionIssue()
     }
 
-    fun restartIfLive() {
-        if (live) restartNow()
-    }
+    /**
+     * Always sends the restart: the daemon, not cached UI state, decides whether it applies (it also
+     * recovers a failed reload or a start that read the selection earlier). The connecting flag is
+     * raised only when the UI already considers the connection live.
+     */
+    fun restartOnPick() = restartNow(raise = live)
 
     fun cancelSwitch() {
         pending.cancel()
@@ -124,10 +129,19 @@ internal class HomeSwitchModel(
         restartNow()
     }
 
-    private fun restartNow() {
-        restartStopPending = true
-        _state.update { it.copy(isConnecting = true) }
-        ports.restart()
+    private fun restartNow(raise: Boolean = true) {
+        val wasConnecting = _state.value.isConnecting
+        if (raise) {
+            restartStopPending = true
+            _state.update { it.copy(isConnecting = true) }
+        }
+        ports.restart { handled ->
+            // Stale UI state: no daemon runs, so no StopSuccess/StartSuccess will ever follow.
+            if (!handled && raise) {
+                restartStopPending = false
+                if (!wasConnecting) _state.update { it.copy(isConnecting = false) }
+            }
+        }
     }
 
     private fun applyServer(guid: String) {

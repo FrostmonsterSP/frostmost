@@ -492,7 +492,12 @@ object CoreServiceManager {
                         try {
                             serviceControl.stopService()
                             delay(500L)
-                            LauncherManager.startService(serviceControl.getService())
+                            val service = serviceControl.getService()
+                            if (!LauncherManager.startService(service)) {
+                                // The stop half already reported StopSuccess; without this the UI would
+                                // wait forever for a start that was never requested (restart, start half).
+                                MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_FAILURE, "")
+                            }
                         } finally {
                             pendingResult.finish()
                         }
