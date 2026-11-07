@@ -303,9 +303,14 @@ class HomeSwitchModelTest {
     @Test
     fun subscriptionFailureRaisesAndSuccessClearsOnlyThatIssue() = runTest {
         val m = model(Ports())
-        m.onUpdateResult(SubscriptionFailure.DOWNLOAD, 7)
-        assertEquals(HomeIssue.UpdateFailed(7), m.state.value.homeIssue)
-        m.onUpdateResult(null, -1)
+        m.onUpdateResult("a", SubscriptionFailure.DOWNLOAD, 7)
+        assertEquals(HomeIssue.UpdateFailed("a", 7), m.state.value.homeIssue)
+        m.onUpdateResult("b", null, -1)
+        assertEquals(HomeIssue.UpdateFailed("a", 7), m.state.value.homeIssue)
+        m.onUpdateResult("a", null, -1)
+        assertNull(m.state.value.homeIssue)
+        m.onUpdateResult("a", SubscriptionFailure.NO_SERVERS, -1, allGroups = true)
+        m.onUpdateResult("b", null, -1, allGroups = true)
         assertNull(m.state.value.homeIssue)
     }
 }

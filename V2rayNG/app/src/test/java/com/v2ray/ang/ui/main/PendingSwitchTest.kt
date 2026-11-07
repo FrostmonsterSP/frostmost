@@ -78,16 +78,23 @@ class HomeIssueDecisionsTest {
         assertTrue(HomeIssue.ServerUnreachable.isConnectionIssue())
         assertTrue(HomeIssue.VpnPermissionDenied.isConnectionIssue())
         assertTrue(!HomeIssue.Expired.isConnectionIssue())
-        assertTrue(!HomeIssue.UpdateFailed(1).isConnectionIssue())
+        assertTrue(!HomeIssue.UpdateFailed("a", 1).isConnectionIssue())
         assertTrue(!(null as HomeIssue?).isConnectionIssue())
     }
 
     @Test
     fun updateFailureRaisesAndSuccessClearsOnlyThatIssue() {
         val f = com.v2ray.ang.dto.SubscriptionFailure.DOWNLOAD
-        assertEquals(HomeIssue.UpdateFailed(5), subscriptionUpdateIssue(f, 5, null))
-        assertNull(subscriptionUpdateIssue(null, -1, HomeIssue.UpdateFailed(5)))
-        assertEquals(HomeIssue.ServerUnreachable, subscriptionUpdateIssue(null, -1, HomeIssue.ServerUnreachable))
-        assertNull(subscriptionUpdateIssue(null, -1, null))
+        assertEquals(HomeIssue.UpdateFailed("a", 5), subscriptionUpdateIssue("a", f, 5, null))
+        assertNull(subscriptionUpdateIssue("a", null, -1, HomeIssue.UpdateFailed("a", 5)))
+        assertEquals(HomeIssue.ServerUnreachable, subscriptionUpdateIssue("a", null, -1, HomeIssue.ServerUnreachable))
+        assertNull(subscriptionUpdateIssue("a", null, -1, null))
+        // Another group's success leaves A's failure; a later failure of B replaces it.
+        assertEquals(HomeIssue.UpdateFailed("a", 5), subscriptionUpdateIssue("b", null, -1, HomeIssue.UpdateFailed("a", 5)))
+        assertEquals(HomeIssue.UpdateFailed("b", 9), subscriptionUpdateIssue("b", f, 9, HomeIssue.UpdateFailed("a", 5)))
+        // "Update all": a success clears any group's failure; a failure is attributed to the given group with no date.
+        assertNull(subscriptionUpdateIssue("b", null, -1, HomeIssue.UpdateFailed("a", 5), allGroups = true))
+        assertEquals(HomeIssue.UpdateFailed("b", -1), subscriptionUpdateIssue("b", f, -1, null, allGroups = true))
+        assertEquals(HomeIssue.ServerUnreachable, subscriptionUpdateIssue("b", null, -1, HomeIssue.ServerUnreachable, allGroups = true))
     }
 }

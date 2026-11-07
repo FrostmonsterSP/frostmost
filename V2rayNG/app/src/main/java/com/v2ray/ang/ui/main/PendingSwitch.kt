@@ -53,13 +53,18 @@ internal fun isServerUnreachable(delayMillis: Long): Boolean = delayMillis <= 0
 internal fun HomeIssue?.isConnectionIssue(): Boolean =
     this == HomeIssue.ServerUnreachable || this == HomeIssue.VpnPermissionDenied
 
-/** A failed update raises [HomeIssue.UpdateFailed]; a successful one clears only that issue. */
+/**
+ * A failed update raises [HomeIssue.UpdateFailed] for [groupId]. A successful one clears only a failed
+ * update of the same group, or any failed update when [allGroups] (update all) succeeded.
+ */
 internal fun subscriptionUpdateIssue(
+    groupId: String,
     failure: com.v2ray.ang.dto.SubscriptionFailure?,
     lastUpdated: Long,
     current: HomeIssue?,
+    allGroups: Boolean = false,
 ): HomeIssue? = when {
-    failure != null -> HomeIssue.UpdateFailed(lastUpdated)
-    current is HomeIssue.UpdateFailed -> null
+    failure != null -> HomeIssue.UpdateFailed(groupId, lastUpdated)
+    current is HomeIssue.UpdateFailed && (allGroups || current.groupId == groupId) -> null
     else -> current
 }

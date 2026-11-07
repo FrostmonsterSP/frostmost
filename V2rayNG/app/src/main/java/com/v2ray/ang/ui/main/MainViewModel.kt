@@ -482,13 +482,15 @@ class MainViewModel(
 
     fun getSubscriptions(): List<SubscriptionCache> = dataSource.getSubscriptions()
 
+    /** Runs on IO: the home screen needs a real group, so "All" resolves to the selected server's group. */
     private fun resolveSelectedGroup(groups: List<GroupMapItem>): String {
         val current = uiState.value.selectedGroupId
-        val resolved = when {
-            groups.isEmpty() -> ""
-            groups.any { it.id == current } -> current
-            else -> groups.first().id
-        }
+        val ids = groups.map { it.id }
+        val needsServerGroup = current.isEmpty() || current !in ids
+        val serverGroup = if (needsServerGroup) {
+            dataSource.getSelectServer()?.let { dataSource.decodeServerConfig(it)?.subscriptionId }
+        } else null
+        val resolved = resolveHomeGroup(ids, current, serverGroup)
         if (resolved != current) {
             dataSource.setSelectedSubscriptionId(resolved)
         }
@@ -635,7 +637,9 @@ class MainViewModel(
                     val lastUpdated = if (result.failure != null && subId.isNotEmpty()) {
                         dataSource.getSubscriptionItem(subId)?.lastUpdated ?: -1L
                     } else -1L
-                    switchModel.onUpdateResult(result.failure, lastUpdated)
+                    // "Update all" reports only the first failure, without its group: attribute it to the selected group.
+                    val issueGroup = subId.ifEmpty { uiState.value.selectedGroupId }
+                    switchModel.onUpdateResult(issueGroup, result.failure, lastUpdated, allGroups = subId.isEmpty())
                     if (result.configCount > 0) {
                         setupGroupTab(forceRefresh = true)
                         refreshSelectedGuid()

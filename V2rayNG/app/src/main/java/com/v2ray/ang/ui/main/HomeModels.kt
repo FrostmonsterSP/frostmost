@@ -18,7 +18,8 @@ internal data class HomeCard(
 internal enum class HomeAction { UPDATE, CABINET, SUPPORT }
 
 sealed interface HomeIssue {
-    data class UpdateFailed(val lastUpdated: Long) : HomeIssue
+    /** Update of group [groupId] failed; shown only on that group's card. [lastUpdated] is -1 when unknown. */
+    data class UpdateFailed(val groupId: String, val lastUpdated: Long) : HomeIssue
     data object ServerUnreachable : HomeIssue
     data object Expired : HomeIssue
     data object TrafficExhausted : HomeIssue
@@ -56,9 +57,12 @@ internal fun homeActions(card: HomeCard): List<HomeAction> {
     }
 }
 
-/** Transient issue wins; otherwise Expired (traffic does not help once expired), then TrafficExhausted. */
+/**
+ * Transient issue wins; otherwise Expired (traffic does not help once expired), then TrafficExhausted.
+ * A failed update belongs to its group: on another card it is ignored. Connection issues are global.
+ */
 internal fun resolveHomeIssue(card: HomeCard, transient: HomeIssue?): HomeIssue? {
-    if (transient != null) return transient
+    if (transient != null && !(transient is HomeIssue.UpdateFailed && transient.groupId != card.id)) return transient
     val info = card.info ?: return null
     return when {
         info.expired -> HomeIssue.Expired
@@ -85,7 +89,10 @@ internal fun visibleHighlight(card: HomeCard, issue: HomeIssue?): HomeAction? =
 /** Status line of the card; locale-neutral, formatted by the UI. */
 internal enum class HomeStatus { DISCONNECTED, CONNECTING, SWITCHING, CONNECTED, FAILED }
 
-/** An open undo window wins, then a start or restart in flight, then the running state, then a failed start. */
+/**
+ * An open undo window wins, then a start or restart in flight, then an unreachable server (a failed
+ * start, or a failed delay test while the VPN stays on), then the running state.
+ */
 internal fun homeStatus(
     isRunning: Boolean,
     isConnecting: Boolean,
@@ -94,8 +101,8 @@ internal fun homeStatus(
 ): HomeStatus = when {
     undoPending -> HomeStatus.SWITCHING
     isConnecting -> HomeStatus.CONNECTING
-    isRunning -> HomeStatus.CONNECTED
     issue == HomeIssue.ServerUnreachable -> HomeStatus.FAILED
+    isRunning -> HomeStatus.CONNECTED
     else -> HomeStatus.DISCONNECTED
 }
 
@@ -105,6 +112,19 @@ internal fun homeStatus(
  */
 internal fun displayedCardId(cards: List<HomeCard>, selectedGroupId: String): String? =
     cards.firstOrNull { it.id == selectedGroupId }?.id ?: cards.firstOrNull()?.id
+
+/**
+ * Real group the home screen selects. The pseudo group "All" ("") or a removed group resolves to the
+ * group holding the selected server, else the first real group; "" only when there is none.
+ */
+internal fun resolveHomeGroup(groupIds: List<String>, current: String, selectedServerGroup: String?): String {
+    val real = groupIds.filter { it != ALL_GROUP_ID }
+    return when {
+        current != ALL_GROUP_ID && current in real -> current
+        selectedServerGroup != null && selectedServerGroup in real -> selectedServerGroup
+        else -> real.firstOrNull() ?: ALL_GROUP_ID
+    }
+}
 
 /** Group id to subscription URL, taken from the same subscription load that builds the groups. */
 internal fun subscriptionUrls(subscriptions: List<SubscriptionCache>): Map<String, String> =

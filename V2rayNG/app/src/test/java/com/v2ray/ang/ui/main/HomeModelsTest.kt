@@ -74,7 +74,7 @@ class HomeModelsTest {
         assertEquals(HomeAction.CABINET, highlightedAction(card(web = "w", support = "s"), HomeIssue.Expired))
         assertEquals(HomeAction.SUPPORT, highlightedAction(card(support = "s"), HomeIssue.Expired))
         assertNull(highlightedAction(card(), HomeIssue.Expired))
-        assertEquals(HomeAction.UPDATE, highlightedAction(card(), HomeIssue.UpdateFailed(1L)))
+        assertEquals(HomeAction.UPDATE, highlightedAction(card(), HomeIssue.UpdateFailed("g", 1L)))
         assertNull(highlightedAction(card(web = "w"), HomeIssue.ServerUnreachable))
         assertNull(highlightedAction(card(web = "w"), HomeIssue.VpnPermissionDenied))
         assertNull(highlightedAction(card(), null))
@@ -128,9 +128,9 @@ class HomeModelsTest {
 
     @Test fun visibleHighlightDropsActionsTheRowDoesNotShow() {
         val manual = card(isManual = true)
-        assertEquals(HomeAction.UPDATE, highlightedAction(manual, HomeIssue.UpdateFailed(5L)))
-        assertNull(visibleHighlight(manual, HomeIssue.UpdateFailed(5L)))
-        assertEquals(HomeAction.UPDATE, visibleHighlight(card(), HomeIssue.UpdateFailed(5L)))
+        assertEquals(HomeAction.UPDATE, highlightedAction(manual, HomeIssue.UpdateFailed("g", 5L)))
+        assertNull(visibleHighlight(manual, HomeIssue.UpdateFailed("g", 5L)))
+        assertEquals(HomeAction.UPDATE, visibleHighlight(card(), HomeIssue.UpdateFailed("g", 5L)))
         assertEquals(HomeAction.CABINET, visibleHighlight(card(web = "w", expired = true), HomeIssue.Expired))
         assertEquals(HomeAction.SUPPORT, visibleHighlight(card(support = "s", exhausted = true), HomeIssue.TrafficExhausted))
         assertNull(visibleHighlight(card(), HomeIssue.Expired))
@@ -146,8 +146,11 @@ class HomeModelsTest {
         assertEquals(HomeStatus.SWITCHING, homeStatus(true, true, true, null))
         assertEquals(HomeStatus.SWITCHING, homeStatus(true, false, true, null))
         assertEquals(HomeStatus.FAILED, homeStatus(false, false, false, HomeIssue.ServerUnreachable))
-        // A failed delay test while running keeps the connection shown as up; the strip explains.
-        assertEquals(HomeStatus.CONNECTED, homeStatus(true, false, false, HomeIssue.ServerUnreachable))
+        // Spec «Ошибки»: an unreachable server reads «Не удалось подключиться» also while the VPN stays on.
+        assertEquals(HomeStatus.FAILED, homeStatus(true, false, false, HomeIssue.ServerUnreachable))
+        assertEquals(HomeStatus.CONNECTING, homeStatus(true, true, false, HomeIssue.ServerUnreachable))
+        assertEquals(HomeStatus.SWITCHING, homeStatus(true, false, true, HomeIssue.ServerUnreachable))
+        assertEquals(HomeStatus.CONNECTED, homeStatus(true, false, false, HomeIssue.UpdateFailed("g", 1L)))
         assertEquals(HomeStatus.DISCONNECTED, homeStatus(false, false, false, HomeIssue.VpnPermissionDenied))
     }
 
@@ -174,9 +177,9 @@ class HomeModelsTest {
     }
 
     @Test fun updateFailedDateHidesUnknown() {
-        assertEquals(1234L, updateFailedDate(HomeIssue.UpdateFailed(1234L)))
-        assertNull(updateFailedDate(HomeIssue.UpdateFailed(-1L)))
-        assertNull(updateFailedDate(HomeIssue.UpdateFailed(0L)))
+        assertEquals(1234L, updateFailedDate(HomeIssue.UpdateFailed("g", 1234L)))
+        assertNull(updateFailedDate(HomeIssue.UpdateFailed("g", -1L)))
+        assertNull(updateFailedDate(HomeIssue.UpdateFailed("g", 0L)))
     }
 
     @Test fun whiteTextReadableOnOverlayOverEveryAccent() {
@@ -188,5 +191,32 @@ class HomeModelsTest {
             val blended = 0xFF000000 or (mix(16) shl 16) or (mix(8) shl 8) or mix(0)
             assertTrue(contrastWithWhite(blended) >= 4.5, "accent ${accent.toString(16)}")
         }
+    }
+
+    @Test fun failedUpdateShowsOnlyOnItsOwnCard() {
+        val a = card().copy(id = "a")
+        val bExpired = card(expired = true).copy(id = "b")
+        val failedA = HomeIssue.UpdateFailed("a", 5L)
+        assertEquals(failedA, resolveHomeIssue(a, failedA))
+        // B keeps its own account issue and is not highlighted for A's failure.
+        assertEquals(HomeIssue.Expired, resolveHomeIssue(bExpired, failedA))
+        assertNull(resolveHomeIssue(card().copy(id = "b"), failedA))
+        assertNull(visibleHighlight(card().copy(id = "b"), resolveHomeIssue(card().copy(id = "b"), failedA)))
+        // Connection issues stay global.
+        assertEquals(HomeIssue.ServerUnreachable, resolveHomeIssue(bExpired, HomeIssue.ServerUnreachable))
+        assertEquals(HomeIssue.VpnPermissionDenied, resolveHomeIssue(bExpired, HomeIssue.VpnPermissionDenied))
+    }
+
+    @Test fun homeGroupResolvesAllAndMissingToARealGroup() {
+        val ids = listOf("", "a", "b")
+        assertEquals("b", resolveHomeGroup(ids, "b", null))
+        assertEquals("b", resolveHomeGroup(ids, "b", "a"))
+        assertEquals("b", resolveHomeGroup(ids, "", "b"))
+        assertEquals("a", resolveHomeGroup(ids, "", null))
+        assertEquals("a", resolveHomeGroup(ids, "", "gone"))
+        assertEquals("b", resolveHomeGroup(ids, "removed", "b"))
+        assertEquals("a", resolveHomeGroup(ids, "removed", null))
+        assertEquals("", resolveHomeGroup(listOf(""), "", null))
+        assertEquals("", resolveHomeGroup(emptyList(), "x", "x"))
     }
 }

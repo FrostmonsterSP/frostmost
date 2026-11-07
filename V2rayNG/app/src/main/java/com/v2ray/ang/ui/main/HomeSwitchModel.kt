@@ -208,8 +208,8 @@ internal class HomeSwitchModel(
         }
     }
 
-    fun onUpdateResult(failure: SubscriptionFailure?, lastUpdated: Long) {
-        _state.update { it.copy(homeIssue = subscriptionUpdateIssue(failure, lastUpdated, it.homeIssue)) }
+    fun onUpdateResult(groupId: String, failure: SubscriptionFailure?, lastUpdated: Long, allGroups: Boolean = false) {
+        _state.update { it.copy(homeIssue = subscriptionUpdateIssue(groupId, failure, lastUpdated, it.homeIssue, allGroups)) }
     }
 
     fun onPermissionDenied() {
