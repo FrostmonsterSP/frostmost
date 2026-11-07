@@ -148,6 +148,9 @@ internal fun ServersSheet(
     // After process death the field comes back but the ViewModel filter does not: send it again.
     // (With a surviving ViewModel the same query is ignored by filterConfig.)
     LaunchedEffect(Unit) { if (query.isNotEmpty()) onAction(MainAction.Search(query)) }
+    // The filter is global across cached groups, so a query typed for one subscription must not
+    // survive a switch to another: drop it with the group that owned it.
+    LaunchedEffect(groupId) { if (query.isNotEmpty()) closeSearch() }
     val lazyListStates = remember { mutableStateMapOf<String, LazyListState>() }
     val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()

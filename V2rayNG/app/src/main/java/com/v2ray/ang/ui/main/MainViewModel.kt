@@ -334,7 +334,7 @@ class MainViewModel(
             MainAction.ExportAll -> exportAllAsync()
             is MainAction.SelectGroup -> subscriptionIdChanged(action.groupId)
             is MainAction.SelectServer -> selectServer(action.guid)
-            is MainAction.SwitchSubscription -> switchSubscription(action.groupId)
+            is MainAction.SwitchSubscription -> switchSubscription(action.groupId, action.fromId)
             MainAction.UndoSwitch -> undoSwitch()
             MainAction.VpnPermissionDenied -> switchModel.onPermissionDenied()
             MainAction.ClearHomeIssue -> switchModel.clearIssue()
@@ -346,9 +346,13 @@ class MainViewModel(
             is MainAction.OpenLink -> openLink(action.url)
             MainAction.ConfirmLink -> (uiState.value.importState as? HomeImportState.Confirm)?.let { applyImport(it.url) }
             MainAction.DismissLink -> {
-                // The confirm dialog dismisses right after confirming, when the import may already be Downloading.
-                linkJob?.cancel()
-                _uiState.update { if (it.importState is HomeImportState.Downloading) it else it.copy(importState = HomeImportState.Idle) }
+                // Confirming dismisses this dialog while the import is already Downloading; the
+                // download runs in its own job, so dismissing must not cancel it. Only a link that
+                // has not started importing yet still owns linkJob.
+                if (uiState.value.importState !is HomeImportState.Downloading) {
+                    linkJob?.cancel()
+                    _uiState.update { it.copy(importState = HomeImportState.Idle) }
+                }
             }
             MainAction.RetryImport -> (uiState.value.importState as? HomeImportState.Failed)?.let { applyImport(it.url) }
             is MainAction.ApplyRoutingPreset -> _uiState.update { it.copy(pendingRules = PendingRules.Preset(action.type)) }
@@ -659,7 +663,12 @@ class MainViewModel(
                 throw cancelled
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to open an import link", e)
-                _uiState.update { it.copy(importState = HomeImportState.Idle) }
+                // Only a download this job started may be reset. A failure state published by
+                // importSubscription (first run keeps it on screen with the address and a retry)
+                // is the user's only way back, so it must survive an exception further down.
+                _uiState.update {
+                    if (it.importState is HomeImportState.Downloading) it.copy(importState = HomeImportState.Idle) else it
+                }
                 toastError(R.string.toast_failure)
             }
         }
@@ -960,6 +969,9 @@ class MainViewModel(
         if (_uiState.value.groups.none { it.id == id }) return
         mutableServerGroupState(id)
         if (uiState.value.selectedGroupId != id) {
+            // The filter is global across cached groups, so a query typed for one subscription
+            // would otherwise hide another subscription's servers with no visible cause.
+            keywordFilter = ""
             dataSource.setSelectedSubscriptionId(id)
             _uiState.update { it.copy(selectedGroupId = id) }
         }
@@ -1037,9 +1049,16 @@ class MainViewModel(
     /** The user is turning the connection off. */
     fun userStopped() = switchModel.onUserStop()
 
-    private fun switchSubscription(groupId: String) {
+    /**
+     * Switches to [groupId], coming from [fromId] — the group the caller currently shows.
+     * Comparing against the caller's shown group, not against [MainUiState.selectedGroupId],
+     * keeps a tap on the visible card working while [resolveSelectedGroup] persists a
+     * different group mid-flight. Re-entering the same target stays allowed so a failed
+     * [resolveServer] can be retried by tapping the same card again.
+     */
+    private fun switchSubscription(groupId: String, fromId: String) {
         val state = uiState.value
-        if (state.groups.none { it.id == groupId } || groupId == state.selectedGroupId) return
+        if (state.groups.none { it.id == groupId } || groupId == fromId) return
         switchServerJob?.cancel()
         switchModel.beginSwitch(state.selectedGroupId, state.selectedGuid)
         subscriptionIdChanged(groupId)

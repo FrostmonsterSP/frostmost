@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -71,7 +72,8 @@ internal fun warnColors(): OnBackgroundColors = if (LocalDarkTheme.current) {
 
 /**
  * Tinted, rounded block; clickable when [onClick] is set, with [onClickLabel] read by TalkBack as the
- * action. One semantic node: descendants are merged into it.
+ * action. One semantic node: descendants are merged into it. Pass [selectedState] when the block
+ * represents one of several mutually exclusive choices, so TalkBack announces which one is active.
  */
 @Composable
 internal fun HomeTile(
@@ -81,6 +83,7 @@ internal fun HomeTile(
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
     enabled: Boolean = true,
+    selectedState: Boolean? = null,
     border: BorderStroke? = null,
     content: @Composable () -> Unit,
 ) {
@@ -88,6 +91,7 @@ internal fun HomeTile(
         .clip(shape)
         .background(colors.container)
         .let { if (border != null) it.border(border, shape) else it }
+        .let { if (selectedState != null) it.semantics { selected = selectedState } else it }
     Box(
         if (onClick != null) {
             base.clickable(enabled = enabled, onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)

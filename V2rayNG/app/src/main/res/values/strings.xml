@@ -623,8 +623,8 @@
     <string name="home_restart">Restart</string>
     <string name="home_switching_to">Switching to “%1$s”</string>
     <string name="home_undo">Undo</string>
-    <string name="home_empty">No subscriptions yet</string>
-    <string name="home_empty_hint">The link comes from whoever gave you the VPN, or from your service’s support.</string>
+    <string name="home_empty">No groups yet</string>
+    <string name="home_empty_hint">Servers are here, but no group holds them. Add a link to see a subscription card.</string>
     <string name="home_update_all">Update all subscriptions</string>
     <string name="home_add_input_label">Link, configuration or rules</string>
     <string name="home_add_kind_subscription">This is a subscription</string>

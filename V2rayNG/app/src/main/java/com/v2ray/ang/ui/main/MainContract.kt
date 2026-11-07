@@ -110,7 +110,8 @@ sealed interface MainAction {
 
     data object LocateHandled : MainAction
 
-    data class SwitchSubscription(val groupId: String) : MainAction
+    /** [fromId] is the group the caller was showing, so a switch works even when the stored selection moves underneath it. */
+    data class SwitchSubscription(val groupId: String, val fromId: String) : MainAction
     data object UndoSwitch : MainAction
     data object VpnPermissionDenied : MainAction
     data object ClearHomeIssue : MainAction

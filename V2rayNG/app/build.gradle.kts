@@ -142,6 +142,19 @@ android {
         )
     }
 
+    lint {
+        // The fork ships only the locales in androidResources.localeFilters above, but keeps the
+        // upstream translation folders in the tree so merges from 2dust/v2rayNG do not conflict.
+        // Lint still treats those now-unshipped folders as shipped: every fork string is reported
+        // MissingTranslation for them, and the upstream app_name slip left by the fork rename is
+        // reported ExtraTranslation. Both are about translations this build cannot display.
+        // Remove this block once a locale folder is either translated for the fork's strings or
+        // deleted, i.e. when `./gradlew :app:lintPlaystoreDebug` reports none of these two issues
+        // without it.
+        disable += "MissingTranslation"
+        disable += "ExtraTranslation"
+    }
+
     packaging {
         jniLibs {
             useLegacyPackaging = true

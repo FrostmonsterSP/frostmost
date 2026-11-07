@@ -626,8 +626,8 @@
     <string name="home_restart">Перезапустить</string>
     <string name="home_switching_to">Переключаюсь на «%1$s»</string>
     <string name="home_undo">Отменить</string>
-    <string name="home_empty">Подписок пока нет</string>
-    <string name="home_empty_hint">Ссылку присылает тот, кто дал вам VPN, или поддержка вашего сервиса.</string>
+    <string name="home_empty">Групп пока нет</string>
+    <string name="home_empty_hint">Серверы есть, но ни одна группа их не содержит. Добавьте ссылку, чтобы появилась карта подписки.</string>
     <string name="home_update_all">Обновить все подписки</string>
     <string name="home_add_input_label">Ссылка, конфигурация или правила</string>
     <string name="home_add_kind_subscription">Это подписка</string>

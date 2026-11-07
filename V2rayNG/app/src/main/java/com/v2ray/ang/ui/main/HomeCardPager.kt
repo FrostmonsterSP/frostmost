@@ -302,6 +302,7 @@ private fun HomeSubscriptionCard(
             .let { if (active) it else it.semantics { this.contentDescription = cardName } },
         onClick = if (active) null else onSelect,
         onClickLabel = if (active) null else selectLabel,
+        selectedState = active,
     ) {
         Column(
             Modifier

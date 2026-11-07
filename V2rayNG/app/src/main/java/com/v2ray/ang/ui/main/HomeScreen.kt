@@ -158,7 +158,9 @@ fun HomeScreen(
         sheetContent = {
             ServersSheet(
                 mainViewModel = mainViewModel,
-                groupId = uiState.selectedGroupId,
+                // The card on screen, so the list always matches it; with no card at all the
+                // stored selection is the only group there is to show.
+                groupId = shownId ?: uiState.selectedGroupId,
                 selectedGuid = uiState.selectedGuid,
                 serverName = serverName,
                 open = sheetOpen,
@@ -197,7 +199,7 @@ fun HomeScreen(
                             cards = cards,
                             shownId = card.id,
                             lit = lit,
-                            onSelect = { id -> if (id != uiState.selectedGroupId) onAction(MainAction.SwitchSubscription(id)) },
+                            onSelect = { id -> onAction(MainAction.SwitchSubscription(id, card.id)) },
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
@@ -206,7 +208,7 @@ fun HomeScreen(
                         shownId = card.id,
                         connection = connection,
                         lit = lit,
-                        onSwitch = { id -> if (id != uiState.selectedGroupId) onAction(MainAction.SwitchSubscription(id)) },
+                        onSwitch = { id -> onAction(MainAction.SwitchSubscription(id, card.id)) },
                         onPower = { onAction(MainAction.ToggleService) },
                         onConfigure = onEditSubscription,
                     )
@@ -347,7 +349,10 @@ private fun AddButton(lit: Boolean, onClick: () -> Unit, filled: Boolean = false
     }
 }
 
-/** No subscription yet. First run proper comes later; this only keeps the screen usable. */
+/**
+ * Fallback for servers that no group holds: [shouldShowFirstRun] has already claimed the truly empty
+ * install, so this screen never means "no subscriptions yet" and must not say so.
+ */
 @Composable
 private fun HomeEmpty(contentColor: Color, onAdd: () -> Unit) {
     Column(
