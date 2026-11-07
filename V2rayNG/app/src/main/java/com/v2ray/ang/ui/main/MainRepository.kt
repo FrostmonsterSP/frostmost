@@ -116,6 +116,13 @@ class MainRepository(
 
     override fun setSelectServer(guid: String) = MmkvManager.setSelectServer(guid)
 
+    override fun rememberServer(groupId: String, guid: String) {
+        if (groupId.isEmpty()) return // the pseudo group "All" has no stored item
+        val item = MmkvManager.decodeSubscription(groupId) ?: return
+        if (item.selectedGuid == guid) return
+        MmkvManager.encodeSubscription(groupId, item.copy(selectedGuid = guid))
+    }
+
     override fun getConfirmRemove(): Boolean =
         MmkvManager.decodeSettingsBool(AppConfig.PREF_CONFIRM_REMOVE, false)
 

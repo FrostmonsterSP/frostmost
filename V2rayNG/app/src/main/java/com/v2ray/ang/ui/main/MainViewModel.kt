@@ -29,9 +29,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -112,9 +115,28 @@ class MainViewModel(
 
     private val initialPageReady = CompletableDeferred<Unit>()
 
+    // ---------- Subscription switch with undo window ----------
+    private val _homeEffects = MutableSharedFlow<HomeEffect>(extraBufferCapacity = 1)
+    val homeEffects: SharedFlow<HomeEffect> = _homeEffects.asSharedFlow()
+
+    /** Group and server selected before the switch that is still undoable; ids only, never positions. */
+    private data class SwitchOrigin(val groupId: String, val guid: String?)
+
+    private var switchOrigin: SwitchOrigin? = null
+    private var switchServerJob: Job? = null
+
+    private val pendingSwitch = PendingSwitch(viewModelScope) {
+        // The window passed: the new group is already selected, only the running core must follow it.
+        switchOrigin = null
+        _homeEffects.tryEmit(HomeEffect.RestartService)
+    }
+
     // ---------- Service events ----------
     init {
         collectServiceEvents()
+        viewModelScope.launch {
+            pendingSwitch.pendingId.collect { id -> _uiState.update { it.copy(undoTargetId = id) } }
+        }
         setupGroupTab()
     }
 
@@ -133,6 +155,13 @@ class MainViewModel(
             MainServiceEvent.StateStartSuccess -> {
                 toastSuccess(R.string.toast_services_success)
                 updateRunningState(true)
+                _uiState.update {
+                    it.copy(
+                        isConnecting = false,
+                        homeIssue = it.homeIssue.takeUnless { issue -> issue.isConnectionIssue() },
+                    )
+                }
+                testCurrentServerRealPing()
             }
 
             is MainServiceEvent.StateStartFailure -> {
@@ -142,12 +171,30 @@ class MainViewModel(
                     toastError(R.string.toast_services_failure)
                 }
                 updateRunningState(false)
+                _uiState.update { it.copy(isConnecting = false, homeIssue = HomeIssue.ServerUnreachable) }
             }
 
-            MainServiceEvent.StateStopSuccess -> updateRunningState(false)
+            MainServiceEvent.StateStopSuccess -> {
+                updateRunningState(false)
+                // A ping failure belongs to a connection that no longer exists.
+                _uiState.update {
+                    it.copy(homeIssue = it.homeIssue.takeUnless { issue -> issue.isConnectionIssue() })
+                }
+            }
             is MainServiceEvent.MeasureDelayResult -> {
                 if (!uiState.value.isRunning || !testRequests.completeCurrent(event.requestId)) return
-                _uiState.update { it.copy(isTesting = testRequests.isTesting, status = MainStatus.ConnectionTest(event.result)) }
+                // Only a result of the current request reaches here (stale ones fail completeCurrent above).
+                val unreachable = isServerUnreachable(event.result.delayMillis, event.result.errorMessage)
+                _uiState.update {
+                    it.copy(
+                        isTesting = testRequests.isTesting,
+                        status = MainStatus.ConnectionTest(event.result),
+                        homeIssue = when {
+                            unreachable -> HomeIssue.ServerUnreachable
+                            else -> it.homeIssue.takeUnless { issue -> issue.isConnectionIssue() }
+                        },
+                    )
+                }
             }
 
             is MainServiceEvent.MeasureConfigSuccess -> {
@@ -289,6 +336,13 @@ class MainViewModel(
             MainAction.ExportAll -> exportAllAsync()
             is MainAction.SelectGroup -> subscriptionIdChanged(action.groupId)
             is MainAction.SelectServer -> updateSelectedGuid(action.guid)
+            is MainAction.SwitchSubscription -> switchSubscription(action.groupId)
+            MainAction.UndoSwitch -> undoSwitch()
+            MainAction.VpnPermissionDenied -> _uiState.update {
+                it.copy(isConnecting = false, homeIssue = HomeIssue.VpnPermissionDenied)
+            }
+
+            MainAction.ClearHomeIssue -> _uiState.update { it.copy(homeIssue = null) }
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
             is MainAction.Search -> filterConfig(action.query)
             is MainAction.ImportBatchConfig -> importBatchConfig(action.configText)
@@ -567,6 +621,12 @@ class MainViewModel(
                         else ->
                             toast(dataSource.getString(R.string.title_update_subscription_result, result.configCount, result.successCount, result.failureCount, result.skipCount))
                     }
+                    val lastUpdated = if (result.failure != null && subId.isNotEmpty()) {
+                        dataSource.getSubscriptionItem(subId)?.lastUpdated ?: -1L
+                    } else -1L
+                    _uiState.update {
+                        it.copy(homeIssue = subscriptionUpdateIssue(result.failure, lastUpdated, it.homeIssue))
+                    }
                     if (result.configCount > 0) {
                         setupGroupTab(forceRefresh = true)
                         refreshSelectedGuid()
@@ -778,6 +838,61 @@ class MainViewModel(
 
     fun updateSelectedGuid(guid: String) {
         dataSource.setSelectServer(guid)
+        dataSource.rememberServer(uiState.value.selectedGroupId, guid)
+        _uiState.update { it.copy(selectedGuid = guid, homeIssue = it.homeIssue.takeUnless { issue -> issue.isConnectionIssue() }) }
+    }
+
+    /** Marks the start request as in flight; cleared by the service result or a denied permission. */
+    fun beginConnecting() {
+        _uiState.update { it.copy(isConnecting = true, homeIssue = null) }
+    }
+
+    private fun switchSubscription(groupId: String) {
+        val state = uiState.value
+        if (state.groups.none { it.id == groupId } || groupId == state.selectedGroupId) return
+        val running = state.isRunning
+        if (running) {
+            // A second swipe keeps the very first origin, so one undo returns to where the user started.
+            if (switchOrigin == null) switchOrigin = SwitchOrigin(state.selectedGroupId, state.selectedGuid)
+        } else {
+            pendingSwitch.cancel()
+            switchOrigin = null
+        }
+        subscriptionIdChanged(groupId)
+        selectServerForGroup(groupId)
+        if (running) pendingSwitch.start(groupId)
+    }
+
+    private fun selectServerForGroup(groupId: String) {
+        switchServerJob?.cancel()
+        switchServerJob = viewModelScope.launch(ioDispatcher) {
+            try {
+                val guids = dataSource.getServerGuidList(groupId)
+                val remembered = dataSource.getSubscriptionItem(groupId)?.selectedGuid
+                val guid = resolveServerForSubscription(remembered, guids) ?: return@launch
+                ensureActive()
+                dataSource.setSelectServer(guid)
+                _uiState.update {
+                    if (it.selectedGroupId != groupId) it
+                    else it.copy(selectedGuid = guid, homeIssue = it.homeIssue.takeUnless { issue -> issue.isConnectionIssue() })
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                LogUtil.e(AppConfig.TAG, "Failed to select server for group: $groupId", error)
+            }
+        }
+    }
+
+    private fun undoSwitch() {
+        val origin = switchOrigin
+        if (pendingSwitch.pendingId.value == null || origin == null) return
+        pendingSwitch.cancel()
+        switchServerJob?.cancel()
+        switchOrigin = null
+        subscriptionIdChanged(origin.groupId)
+        val guid = origin.guid ?: return
+        dataSource.setSelectServer(guid)
         _uiState.update { it.copy(selectedGuid = guid) }
     }
 
@@ -930,6 +1045,11 @@ class MainViewModel(
 
     // ---------- Running state ----------
     private fun updateRunningState(running: Boolean, clearTestingText: Boolean = true) {
+        if (!running) {
+            // VPN turned off: the new group stays selected, nothing is left to restart or undo.
+            pendingSwitch.cancel()
+            switchOrigin = null
+        }
         if (!running || clearTestingText) testRequests.invalidateCurrent()
         _uiState.update { state ->
             state.copy(
@@ -947,6 +1067,8 @@ class MainViewModel(
         selectedGroupLoadJob?.cancel()
         reloadJob?.cancel()
         filterJob?.cancel()
+        switchServerJob?.cancel()
+        pendingSwitch.cancel()
         cancelAllPing()
         dataSource.close()
         super.onCleared()

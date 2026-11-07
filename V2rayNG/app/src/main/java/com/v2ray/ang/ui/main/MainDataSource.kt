@@ -16,6 +16,8 @@ interface MainDataSource : Closeable {
     fun setSelectedSubscriptionId(id: String)
 
     fun getSelectServer(): String?
+    /** Stores [guid] as the server the user picked in subscription [groupId]. */
+    fun rememberServer(groupId: String, guid: String)
     fun setSelectServer(guid: String)
 
     fun getConfirmRemove(): Boolean

@@ -26,7 +26,12 @@ data class MainUiState(
     val locateTarget: LocateTarget? = null,
     val confirmRemove: Boolean = false,
     val doubleColumnDisplay: Boolean = false,
-    val shareQRCodeBitmap: android.graphics.Bitmap? = null
+    val shareQRCodeBitmap: android.graphics.Bitmap? = null,
+    /** Group id of a switch made while connected that can still be undone; null when none. */
+    val undoTargetId: String? = null,
+    val homeIssue: HomeIssue? = null,
+    /** True from the user's start request until the service reports success or failure. */
+    val isConnecting: Boolean = false,
 )
 
 /**
@@ -69,4 +74,14 @@ sealed interface MainAction {
     data class ImportBatchConfig(val configText: String) : MainAction
 
     data object LocateHandled : MainAction
+
+    data class SwitchSubscription(val groupId: String) : MainAction
+    data object UndoSwitch : MainAction
+    data object VpnPermissionDenied : MainAction
+    data object ClearHomeIssue : MainAction
+}
+
+/** One-shot commands for the Activity that the ViewModel cannot run itself. */
+sealed interface HomeEffect {
+    data object RestartService : HomeEffect
 }

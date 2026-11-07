@@ -16,7 +16,7 @@ internal data class HomeCard(
 
 internal enum class HomeAction { UPDATE, CABINET, SUPPORT }
 
-internal sealed interface HomeIssue {
+sealed interface HomeIssue {
     data class UpdateFailed(val lastUpdated: Long) : HomeIssue
     data object ServerUnreachable : HomeIssue
     data object Expired : HomeIssue
