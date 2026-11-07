@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import com.v2ray.ang.dto.SubscriptionFailure
+import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.handler.ImportClassifier
 import java.net.URI
 
@@ -30,9 +31,22 @@ internal fun nextImportState(url: String, hasSubscriptions: Boolean, title: Stri
 internal fun linkDisplayHost(url: String): String =
     runCatching { URI(url.trim()).host }.getOrNull()?.takeIf { it.isNotEmpty() } ?: "…"
 
-/** The failure stays on the first-run screen; with subscriptions present it is only reported (toast). */
-internal fun importFailureState(url: String, hasSubscriptions: Boolean, reason: SubscriptionFailure): HomeImportState =
-    if (hasSubscriptions) HomeImportState.Idle else HomeImportState.Failed(url, reason)
+/**
+ * The failure stays on the first-run screen; otherwise the state is Idle and the address goes back to the
+ * Add sheet (see MainUiState.importDraft). [firstRun] must be the predicate that decides the first-run screen.
+ */
+internal fun importFailureState(url: String, firstRun: Boolean, reason: SubscriptionFailure): HomeImportState =
+    if (firstRun) HomeImportState.Failed(url, reason) else HomeImportState.Idle
+
+/** Same predicate as [shouldShowFirstRun]: no subscription and no server. */
+internal fun isFirstRun(hasSubscriptions: Boolean, serverCount: Int): Boolean = !hasSubscriptions && serverCount == 0
+
+/** Guid of the stored subscription with exactly this [url]; a repeated link opens it without downloading. */
+internal fun existingSubscriptionGuid(subscriptions: List<SubscriptionCache>, url: String): String? =
+    subscriptions.firstOrNull { it.guid.isNotEmpty() && it.subscription.url == url }?.guid
+
+/** Value for EXTRA_IMPORT_LINK from shared text: the raw text (any kind is classified later), "" when blank. */
+internal fun sharedTextExtra(text: String?): String = text?.trim().orEmpty()
 
 /**
  * Value for `MainActivity.EXTRA_IMPORT_LINK`: the validated address, or "" when the link is not

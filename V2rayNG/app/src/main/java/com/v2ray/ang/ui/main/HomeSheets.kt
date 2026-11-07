@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
+import com.v2ray.ang.dto.SubscriptionFailure
 import com.v2ray.ang.enums.RoutingType
 import com.v2ray.ang.handler.ImportClassifier
 import com.v2ray.ang.handler.ImportKind
@@ -75,6 +76,7 @@ internal fun HomeSheetHost(
     routingPresetLoaded: Boolean,
     pendingRules: PendingRules?,
     importDraft: String?,
+    importDraftFailure: SubscriptionFailure?,
     onAction: (MainAction) -> Unit,
     onNavigate: (MainDestination) -> Unit,
 ) {
@@ -89,7 +91,7 @@ internal fun HomeSheetHost(
                 onAction(action)
             }
             when (sheet) {
-                HomeSheet.Add -> AddSheetContent(draft = importDraft, onAction = act)
+                HomeSheet.Add -> AddSheetContent(draft = importDraft, failure = importDraftFailure, onAction = act)
                 HomeSheet.Rules -> RulesSheetContent(
                     preset = routingPreset,
                     presetLoaded = routingPresetLoaded,
@@ -161,10 +163,12 @@ internal fun rememberImportKind(text: String): ImportKind? {
 }
 
 @Composable
-private fun AddSheetContent(draft: String?, onAction: (MainAction) -> Unit) {
+private fun AddSheetContent(draft: String?, failure: SubscriptionFailure?, onAction: (MainAction) -> Unit) {
     var text by rememberSaveable(draft) { mutableStateOf(draft.orEmpty()) }
     var showOther by rememberSaveable { mutableStateOf(false) }
     val kind = rememberImportKind(text)
+    // The failure belongs to the address that failed; editing the field hides it.
+    val shownFailure = failure?.takeIf { text.trim() == draft?.trim() }
     Column(
         Modifier
             .verticalScroll(rememberScrollState())
@@ -181,10 +185,20 @@ private fun AddSheetContent(draft: String?, onAction: (MainAction) -> Unit) {
                 onValueChange = { text = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.home_add_input_label)) },
-                isError = kind == ImportKind.Invalid,
+                isError = kind == ImportKind.Invalid || shownFailure != null,
                 maxLines = 4,
             )
-            kind?.let {
+            if (shownFailure != null) {
+                Text(
+                    stringResource(
+                        if (shownFailure == SubscriptionFailure.DOWNLOAD) R.string.home_import_download_failed
+                        else R.string.home_import_no_servers
+                    ),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            } else kind?.let {
                 val invalid = it == ImportKind.Invalid
                 Text(
                     stringResource(importKindLabel(it)),
@@ -197,7 +211,7 @@ private fun AddSheetContent(draft: String?, onAction: (MainAction) -> Unit) {
                 onClick = { onAction(MainAction.ApplyImport(text)) },
                 enabled = kind != null && kind != ImportKind.Invalid,
                 modifier = Modifier.align(Alignment.End),
-            ) { Text(stringResource(R.string.home_add)) }
+            ) { Text(stringResource(if (shownFailure != null) R.string.home_import_retry else R.string.home_add)) }
         }
         ImportMenuAction.entries.filter { !it.isManual }.forEach { item ->
             SheetRow(stringResource(item.labelRes)) { onAction(item.action) }

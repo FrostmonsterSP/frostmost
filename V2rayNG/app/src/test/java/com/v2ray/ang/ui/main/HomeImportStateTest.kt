@@ -1,6 +1,8 @@
 package com.v2ray.ang.ui.main
 
 import com.v2ray.ang.dto.SubscriptionFailure
+import com.v2ray.ang.dto.entities.SubscriptionCache
+import com.v2ray.ang.dto.entities.SubscriptionItem
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -26,9 +28,9 @@ class HomeImportStateTest {
     @Test fun failureStaysOnScreenOnlyOnFirstRun() {
         assertEquals(
             HomeImportState.Failed("u", SubscriptionFailure.DOWNLOAD),
-            importFailureState("u", hasSubscriptions = false, SubscriptionFailure.DOWNLOAD),
+            importFailureState("u", firstRun = true, SubscriptionFailure.DOWNLOAD),
         )
-        assertEquals(HomeImportState.Idle, importFailureState("u", hasSubscriptions = true, SubscriptionFailure.DOWNLOAD))
+        assertEquals(HomeImportState.Idle, importFailureState("u", firstRun = false, SubscriptionFailure.DOWNLOAD))
     }
 
     @Test fun deepLinkExtraKeepsValidLinkAndMarksInvalidAsEmpty() {
@@ -44,5 +46,25 @@ class HomeImportStateTest {
         assertEquals("https://a.b/s#Name", deepLinkExtra("install-sub", "https://a.b/s", "Name"))
         assertEquals("https://a.b/s#own", deepLinkExtra("install-sub", "https://a.b/s#own", "Name"))
         assertEquals("", deepLinkExtra("install-sub", "javascript:x", "Name"))
+    }
+
+    @Test fun firstRunNeedsNoSubscriptionAndNoServers() {
+        assertEquals(true, isFirstRun(hasSubscriptions = false, serverCount = 0))
+        assertEquals(false, isFirstRun(hasSubscriptions = false, serverCount = 3))
+        assertEquals(false, isFirstRun(hasSubscriptions = true, serverCount = 0))
+    }
+
+    @Test fun repeatedLinkResolvesToTheStoredSubscription() {
+        fun sub(guid: String, url: String) = SubscriptionCache(guid, SubscriptionItem().apply { this.url = url })
+        val stored = listOf(sub("", "https://a.b/s"), sub("g1", ""), sub("g2", "https://a.b/s"))
+        assertEquals("g2", existingSubscriptionGuid(stored, "https://a.b/s"))
+        assertEquals(null, existingSubscriptionGuid(stored, "https://other/s"))
+    }
+
+    @Test fun sharedTextIsPassedThroughTrimmedOrBlank() {
+        assertEquals("{\"a\":1}", sharedTextExtra("  {\"a\":1}\n"))
+        assertEquals("see https://a.b/s", sharedTextExtra("see https://a.b/s"))
+        assertEquals("", sharedTextExtra("   "))
+        assertEquals("", sharedTextExtra(null))
     }
 }

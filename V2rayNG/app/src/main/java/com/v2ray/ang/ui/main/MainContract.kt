@@ -42,6 +42,8 @@ data class MainUiState(
     val pendingRules: PendingRules? = null,
     /** Text fetched from the clipboard, a QR code or a file, waiting in the Add sheet for the user to confirm; null when none. */
     val importDraft: String? = null,
+    /** Why the import of [importDraft] failed, shown in the Add sheet with a retry; null when none. Cleared with the draft. */
+    val importDraftFailure: com.v2ray.ang.dto.SubscriptionFailure? = null,
     /** Number of stored servers across all groups; null until the first group load, so first run is not flashed at start. */
     val serverCount: Int? = null,
     /** Deep-link confirmation, download progress and first-run failure of a subscription import. */

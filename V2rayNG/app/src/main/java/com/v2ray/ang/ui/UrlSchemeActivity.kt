@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.main.MainActivity
 import com.v2ray.ang.ui.main.deepLinkExtra
+import com.v2ray.ang.ui.main.sharedTextExtra
 
 /**
  * Entry for `<scheme>://install-sub?url=...`, `install-config` and shared text. It only validates the
@@ -31,9 +32,9 @@ class UrlSchemeActivity : BaseComponentActivity() {
 
     /** The validated address, or "" when the intent holds no acceptable link. */
     private fun linkFrom(source: Intent): String = when (source.action) {
-        // Shared text goes the same way as install-config: an http(s) address or a server link.
+        // Shared text keeps its old reach: the home screen classifies it (subscription, servers, rules).
         Intent.ACTION_SEND ->
-            if (source.type == "text/plain") deepLinkExtra("install-config", source.getStringExtra(Intent.EXTRA_TEXT)) else ""
+            if (source.type == "text/plain") sharedTextExtra(source.getStringExtra(Intent.EXTRA_TEXT)) else ""
         Intent.ACTION_VIEW -> {
             val data = source.data
             deepLinkExtra(data?.host, data?.getQueryParameter("url"), data?.fragment)

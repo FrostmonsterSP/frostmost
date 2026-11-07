@@ -1,7 +1,6 @@
 package com.v2ray.ang.ui.main
 
 import android.app.Application
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -343,7 +342,7 @@ class MainViewModel(
             is MainAction.Search -> filterConfig(action.query)
             is MainAction.ApplyImport -> applyImport(action.text)
             is MainAction.PrefillImport -> _uiState.update { it.copy(importDraft = action.text) }
-            MainAction.ClearImportDraft -> _uiState.update { it.copy(importDraft = null) }
+            MainAction.ClearImportDraft -> _uiState.update { it.copy(importDraft = null, importDraftFailure = null) }
             is MainAction.OpenLink -> openLink(action.url)
             MainAction.ConfirmLink -> (uiState.value.importState as? HomeImportState.Confirm)?.let { applyImport(it.url) }
             MainAction.DismissLink -> {
@@ -639,7 +638,15 @@ class MainViewModel(
                     applyImport(link)
                     return@launch
                 }
-                val has = hasSubscriptions()
+                val stored = dataSource.getSubscriptions()
+                // A repeated link just opens the subscription already added: no download, no question.
+                existingSubscriptionGuid(stored, kind.url)?.let { guid ->
+                    toast(R.string.home_import_subscription_exists)
+                    if (uiState.value.groups.none { it.id == guid }) setupGroupTab().join()
+                    subscriptionIdChanged(guid)
+                    return@launch
+                }
+                val has = hasSubscription(stored)
                 if (!has) {
                     _uiState.update { it.copy(importState = nextImportState(kind.url, false, null)) }
                     applyImport(kind.url)
@@ -659,8 +666,13 @@ class MainViewModel(
     }
 
     /** A real subscription (not the "All" group, not a manual group) exists. Reads storage: call off the main thread. */
-    private fun hasSubscriptions(): Boolean =
-        dataSource.getSubscriptions().any { it.guid.isNotEmpty() && it.subscription.url.isNotBlank() }
+    private fun hasSubscriptions(): Boolean = hasSubscription(dataSource.getSubscriptions())
+
+    private fun hasSubscription(stored: List<SubscriptionCache>): Boolean =
+        stored.any { it.guid.isNotEmpty() && it.subscription.url.isNotBlank() }
+
+    /** The predicate behind the first-run screen; reads storage: call off the main thread. */
+    private fun isFirstRunNow(): Boolean = isFirstRun(hasSubscriptions(), dataSource.getServerGuidList("").size)
 
     /**
      * Blocking; runs on the IO dispatcher of [applyImport]. The new subscription becomes the selected
@@ -672,7 +684,7 @@ class MainViewModel(
             _uiState.update { it.copy(importState = HomeImportState.Idle) }
             return
         }
-        val had = hasSubscriptions()
+        val firstRun = isFirstRunNow()
         _uiState.update { it.copy(importState = HomeImportState.Downloading(url)) }
         try {
             val guid = when (val result = dataSource.importSubscriptionUrl(url)) {
@@ -685,11 +697,11 @@ class MainViewModel(
                     result.guid
                 }
                 SubscriptionImportResult.DownloadFailed -> {
-                    reportImportFailure(url, had, SubscriptionFailure.DOWNLOAD, R.string.home_import_download_failed)
+                    reportImportFailure(url, firstRun, SubscriptionFailure.DOWNLOAD)
                     return
                 }
                 SubscriptionImportResult.NoServers -> {
-                    reportImportFailure(url, had, SubscriptionFailure.NO_SERVERS, R.string.home_import_no_servers)
+                    reportImportFailure(url, firstRun, SubscriptionFailure.NO_SERVERS)
                     return
                 }
             }
@@ -701,10 +713,15 @@ class MainViewModel(
         }
     }
 
-    /** First run keeps the error on screen with a retry; otherwise it is a toast. */
-    private fun reportImportFailure(url: String, hasSubscriptions: Boolean, reason: SubscriptionFailure, @StringRes message: Int) {
-        if (hasSubscriptions) toastError(message)
-        _uiState.update { it.copy(importState = importFailureState(url, hasSubscriptions, reason)) }
+    /** First run keeps the error on its screen; otherwise the address returns to the Add sheet with the error and a retry. */
+    private fun reportImportFailure(url: String, firstRun: Boolean, reason: SubscriptionFailure) {
+        _uiState.update {
+            it.copy(
+                importState = importFailureState(url, firstRun, reason),
+                importDraft = if (firstRun) it.importDraft else url,
+                importDraftFailure = if (firstRun) it.importDraftFailure else reason,
+            )
+        }
     }
 
     /** Blocking; runs on the IO dispatcher of [applyImport]. */

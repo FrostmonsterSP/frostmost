@@ -122,6 +122,7 @@ fun HomeScreen(
         routingPresetLoaded = uiState.routingPresetLoaded,
         pendingRules = uiState.pendingRules,
         importDraft = uiState.importDraft,
+        importDraftFailure = uiState.importDraftFailure,
         onAction = onAction,
         onNavigate = onNavigate,
     )
