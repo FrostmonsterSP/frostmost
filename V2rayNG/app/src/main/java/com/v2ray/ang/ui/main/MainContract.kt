@@ -38,7 +38,15 @@ data class MainUiState(
     /** Routing preset the current rules equal; null means custom rules (or not loaded yet, see [routingPresetLoaded]). */
     val routingPreset: RoutingType? = null,
     val routingPresetLoaded: Boolean = false,
+    /** Rules replacement waiting for the user's confirmation; null when none. */
+    val pendingRules: PendingRules? = null,
 )
+
+/** A replacement of the routing rules that needs the "existing rules will be deleted" confirmation. */
+sealed interface PendingRules {
+    data class Preset(val type: RoutingType) : PendingRules
+    data class Import(val json: String) : PendingRules
+}
 
 /**
  * All possible user interaction intents
@@ -77,7 +85,11 @@ sealed interface MainAction {
     data object DismissQRCodeDialog : MainAction
     data class OpenSubscriptionLink(val url: String) : MainAction
 
-    data class ImportBatchConfig(val configText: String) : MainAction
+    /** Imports pasted, scanned or file text: a subscription, configurations, or routing rules (after confirmation). */
+    data class ApplyImport(val text: String) : MainAction
+    data class ApplyRoutingPreset(val type: RoutingType) : MainAction
+    data object ConfirmRules : MainAction
+    data object DismissRules : MainAction
 
     data object LocateHandled : MainAction
 

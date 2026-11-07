@@ -629,5 +629,20 @@
     <string name="home_empty">Подписок пока нет</string>
     <string name="home_empty_hint">Ссылку присылает тот, кто дал вам VPN, или поддержка вашего сервиса.</string>
     <string name="home_update_all">Обновить все подписки</string>
+    <string name="home_add_input_label">Ссылка, конфигурация или правила</string>
+    <string name="home_add_kind_subscription">Это подписка</string>
+    <string name="home_add_kind_config">Это конфигурации серверов</string>
+    <string name="home_add_kind_routing">Это правила маршрутизации</string>
+    <string name="home_add_kind_invalid">Не распознано. Вставьте ссылку на подписку, ссылки на серверы или правила</string>
+    <string name="home_add_other">Другие способы</string>
+    <string name="home_rules_add_own">Добавить свои правила</string>
+    <string name="home_import_invalid">Не похоже на подписку, конфигурации или правила</string>
+    <string name="home_import_insecure_url">Ссылка на подписку должна начинаться с https://</string>
+    <string name="home_import_download_failed">Не удалось скачать подписку</string>
+    <string name="home_import_no_servers">В подписке нет подходящих серверов</string>
+    <string name="home_import_nothing_added">Ничего не добавлено: рабочих конфигураций не найдено</string>
+    <string name="home_import_rules_failed">Не удалось применить правила</string>
+    <string name="home_import_subscription_added">Подписка добавлена</string>
+    <string name="home_import_subscription_exists">Эта подписка уже добавлена</string>
 
 </resources>

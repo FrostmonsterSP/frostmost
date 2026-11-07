@@ -24,8 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,25 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
-import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import kotlinx.coroutines.launch
-
-/** Rare destinations reachable from "More"; Promotion is removed in the fork. */
-private val MORE_DESTINATIONS = listOf(
-    MainDestination.Subscriptions,
-    MainDestination.PerAppProxy,
-    MainDestination.Routing,
-    MainDestination.UserAssets,
-    MainDestination.Settings,
-    MainDestination.Logcat,
-    MainDestination.CheckUpdate,
-    MainDestination.BackupRestore,
-    MainDestination.About,
-)
-
-/** Group id the repository uses for "update all subscriptions". */
-private const val ALL_SUBSCRIPTIONS_ID = ""
 
 /**
  * Home screen of the fork: which subscription, whether the VPN is on, and how to turn it on.
@@ -126,6 +108,17 @@ fun HomeScreen(
     val sheetOpen = sheetState.currentValue == SheetValue.Expanded || sheetState.targetValue == SheetValue.Expanded
     BackHandler(enabled = sheetOpen) { scope.launch { sheetState.partialExpand() } }
 
+    var sheet by rememberSaveable { mutableStateOf<HomeSheet?>(null) }
+    HomeSheetHost(
+        sheet = sheet,
+        onSheetChange = { sheet = it },
+        routingPreset = uiState.routingPreset,
+        routingPresetLoaded = uiState.routingPresetLoaded,
+        pendingRules = uiState.pendingRules,
+        onAction = onAction,
+        onNavigate = onNavigate,
+    )
+
     val dialogs = rememberHomeDialogs(onAction)
     dialogs.Show(confirmRemove = uiState.confirmRemove, qrBitmap = uiState.shareQRCodeBitmap)
 
@@ -169,11 +162,11 @@ fun HomeScreen(
                 HomeTopBar(
                     contentColor = onBackground,
                     lit = lit,
-                    onAction = onAction,
-                    onNavigate = onNavigate,
+                    onAdd = { sheet = HomeSheet.Add },
+                    onMore = { sheet = HomeSheet.More },
                 )
                 if (card == null) {
-                    HomeEmpty(contentColor = onBackground, onAction = onAction)
+                    HomeEmpty(contentColor = onBackground, onAdd = { sheet = HomeSheet.Add })
                 } else {
                     if (cards.size > 1) {
                         HomeSubscriptionRow(
@@ -220,7 +213,7 @@ fun HomeScreen(
                     presetLoaded = uiState.routingPresetLoaded,
                     preset = uiState.routingPreset,
                     lit = lit,
-                    onClick = { onNavigate(MainDestination.Routing) },
+                    onClick = { sheet = HomeSheet.Rules },
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
                 )
             }
@@ -265,8 +258,8 @@ private fun LightStatusBarIcons(onAccent: Boolean) {
 private fun HomeTopBar(
     contentColor: Color,
     lit: Boolean,
-    onAction: (MainAction) -> Unit,
-    onNavigate: (MainDestination) -> Unit,
+    onAdd: () -> Unit,
+    onMore: () -> Unit,
 ) {
     Row(
         Modifier
@@ -285,80 +278,54 @@ private fun HomeTopBar(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        AddMenuButton(lit = lit, onAction = onAction)
-        Box {
-            var open by remember { mutableStateOf(false) }
-            HomeTile(
-                colors = OnBackgroundColors(Color.Transparent, contentColor),
-                shape = RoundedCornerShape(14.dp),
-                onClick = { open = true },
+        AddButton(lit = lit, onClick = onAdd)
+        HomeTile(
+            colors = OnBackgroundColors(Color.Transparent, contentColor),
+            shape = RoundedCornerShape(14.dp),
+            onClick = onMore,
+        ) {
+            Column(
+                Modifier.size(48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                Column(
-                    Modifier
-                        .size(48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Icon(painterResource(R.drawable.ic_settings_24dp), contentDescription = null, modifier = Modifier.size(22.dp))
-                    Text(stringResource(R.string.home_more), style = MaterialTheme.typography.labelSmall)
-                }
-            }
-            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.home_update_all)) },
-                    onClick = {
-                        open = false
-                        onAction(MainAction.UpdateGroupSubscription(ALL_SUBSCRIPTIONS_ID))
-                    },
-                )
-                AppDropdownMenuItems(MORE_DESTINATIONS, { it.labelRes }) { destination ->
-                    open = false
-                    onNavigate(destination)
-                }
+                Icon(painterResource(R.drawable.ic_settings_24dp), contentDescription = null, modifier = Modifier.size(22.dp))
+                Text(stringResource(R.string.home_more), style = MaterialTheme.typography.labelSmall)
             }
         }
     }
 }
 
-/** "Add" opens the existing import menu until the Add sheet exists. */
+/** "Add" opens the Add sheet. */
 @Composable
-private fun AddMenuButton(lit: Boolean, onAction: (MainAction) -> Unit, filled: Boolean = false) {
-    Box {
-        var open by remember { mutableStateOf(false) }
-        val label = stringResource(R.string.home_add)
-        if (filled) {
-            Button(onClick = { open = true }) { Text(label) }
-        } else {
-            val colors = if (lit) {
-                OnBackgroundColors(Color.White.copy(alpha = HOME_ON_ACCENT_OVERLAY), Color.White)
-            } else {
-                OnBackgroundColors(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
-            }
-            HomeTile(colors = colors, shape = CircleShape, onClick = { open = true }) {
-                Row(
-                    Modifier
-                        .height(40.dp)
-                        .padding(start = 12.dp, end = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = null, modifier = Modifier.size(20.dp))
-                    Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            ImportMenuContent { action ->
-                open = false
-                onAction(action)
-            }
+private fun AddButton(lit: Boolean, onClick: () -> Unit, filled: Boolean = false) {
+    val label = stringResource(R.string.home_add)
+    if (filled) {
+        Button(onClick = onClick) { Text(label) }
+        return
+    }
+    val colors = if (lit) {
+        OnBackgroundColors(Color.White.copy(alpha = HOME_ON_ACCENT_OVERLAY), Color.White)
+    } else {
+        OnBackgroundColors(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
+    }
+    HomeTile(colors = colors, shape = CircleShape, onClick = onClick) {
+        Row(
+            Modifier
+                .height(40.dp)
+                .padding(start = 12.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 /** No subscription yet. First run proper comes later; this only keeps the screen usable. */
 @Composable
-private fun HomeEmpty(contentColor: Color, onAction: (MainAction) -> Unit) {
+private fun HomeEmpty(contentColor: Color, onAdd: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -372,6 +339,6 @@ private fun HomeEmpty(contentColor: Color, onAction: (MainAction) -> Unit) {
             color = contentColor,
         )
         Text(stringResource(R.string.home_empty_hint), style = MaterialTheme.typography.bodyMedium, color = contentColor)
-        AddMenuButton(lit = false, onAction = onAction, filled = true)
+        AddButton(lit = false, onClick = onAdd, filled = true)
     }
 }

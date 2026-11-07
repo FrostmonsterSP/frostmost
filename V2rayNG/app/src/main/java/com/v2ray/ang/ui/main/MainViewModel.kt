@@ -10,6 +10,7 @@ import com.v2ray.ang.dto.ConnectionTestResult
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.LocateTarget
 import com.v2ray.ang.dto.RealPingResult
+import com.v2ray.ang.dto.SubscriptionImportResult
 import com.v2ray.ang.dto.TestServiceMessage
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServersCache
@@ -18,6 +19,8 @@ import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
+import com.v2ray.ang.handler.ImportClassifier
+import com.v2ray.ang.handler.ImportKind
 import com.v2ray.ang.handler.SubscriptionInfoParser
 import com.v2ray.ang.ui.base.BaseViewModel
 import com.v2ray.ang.util.LogUtil
@@ -336,7 +339,10 @@ class MainViewModel(
             MainAction.ClearHomeIssue -> switchModel.clearIssue()
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
             is MainAction.Search -> filterConfig(action.query)
-            is MainAction.ImportBatchConfig -> importBatchConfig(action.configText)
+            is MainAction.ApplyImport -> applyImport(action.text)
+            is MainAction.ApplyRoutingPreset -> _uiState.update { it.copy(pendingRules = PendingRules.Preset(action.type)) }
+            MainAction.ConfirmRules -> confirmRules()
+            MainAction.DismissRules -> _uiState.update { it.copy(pendingRules = null) }
             MainAction.LocateHandled -> consumeLocateTarget()
             is MainAction.ShareQRCode -> {
                 val bitmap = dataSource.share2QRCode(action.guid)
@@ -582,26 +588,99 @@ class MainViewModel(
     }
 
     // ---------- Business actions (coroutine-based) ----------
-    private fun importBatchConfig(configText: String) {
+    /** One entry for pasted, scanned and file text; the type decides the path (see [ImportClassifier]). */
+    private fun applyImport(text: String) {
         launchLoading {
             withContext(ioDispatcher) {
                 try {
-                    val (count, countSub) = dataSource.importBatchConfig(
-                        configText, uiState.value.selectedGroupId, true
-                    )
-                    when {
-                        count > 0 -> {
-                            toast(dataSource.getString(R.string.title_import_config_count, count))
-                            setupGroupTab(forceRefresh = true)
-                        }
-
-                        countSub > 0 -> setupGroupTab(forceRefresh = true)
-                        else -> toastError(R.string.toast_failure)
+                    when (val kind = ImportClassifier.classify(text)) {
+                        is ImportKind.Subscription -> importSubscription(kind.url)
+                        ImportKind.Config -> importConfigText(text)
+                        ImportKind.Routing ->
+                            _uiState.update { it.copy(pendingRules = PendingRules.Import(text.trim())) }
+                        ImportKind.Invalid -> toastError(R.string.home_import_invalid)
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "Failed to import batch config", e)
+                    LogUtil.e(AppConfig.TAG, "Failed to apply import", e)
+                    toastError(R.string.toast_failure)
+                }
+            }
+        }
+    }
+
+    /** Blocking; runs on the IO dispatcher of [applyImport]. The new subscription becomes the selected one. */
+    private suspend fun importSubscription(url: String) {
+        if (!dataSource.isValidSubUrl(url)) {
+            toastError(R.string.home_import_insecure_url)
+            return
+        }
+        val guid = when (val result = dataSource.importSubscriptionUrl(url)) {
+            is SubscriptionImportResult.Added -> {
+                toastSuccess(R.string.home_import_subscription_added)
+                result.guid
+            }
+            is SubscriptionImportResult.AlreadyExists -> {
+                toast(R.string.home_import_subscription_exists)
+                result.guid
+            }
+            SubscriptionImportResult.DownloadFailed -> {
+                toastError(R.string.home_import_download_failed)
+                return
+            }
+            SubscriptionImportResult.NoServers -> {
+                toastError(R.string.home_import_no_servers)
+                return
+            }
+        }
+        setupGroupTab(forceRefresh = true).join()
+        subscriptionIdChanged(guid)
+    }
+
+    /** Blocking; runs on the IO dispatcher of [applyImport]. */
+    private suspend fun importConfigText(configText: String) {
+        val (count, countSub) = dataSource.importBatchConfig(configText, uiState.value.selectedGroupId, true)
+        when {
+            count > 0 -> {
+                toast(dataSource.getString(R.string.title_import_config_count, count))
+                setupGroupTab(forceRefresh = true)
+            }
+
+            countSub > 0 -> setupGroupTab(forceRefresh = true)
+            else -> toastError(R.string.home_import_nothing_added)
+        }
+    }
+
+    /** Applies the confirmed rules replacement, then re-detects the preset and restarts a running service. */
+    private fun confirmRules() {
+        val pending = uiState.value.pendingRules ?: return
+        _uiState.update { it.copy(pendingRules = null) }
+        launchLoading {
+            withContext(ioDispatcher) {
+                try {
+                    val applied = when (pending) {
+                        is PendingRules.Preset -> {
+                            dataSource.applyRoutingPreset(pending.type)
+                            true
+                        }
+                        is PendingRules.Import -> dataSource.resetRoutingRulesets(pending.json)
+                    }
+                    if (!applied) {
+                        toastError(R.string.home_import_rules_failed)
+                        return@withContext
+                    }
+                    toastSuccess(R.string.toast_success)
+                    refreshRoutingPreset()
+                    if (uiState.value.isRunning) {
+                        dataSource.restartService { handled ->
+                            if (!handled) LogUtil.w(AppConfig.TAG, "Rules changed, but no service received the restart")
+                        }
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (e: Exception) {
+                    LogUtil.e(AppConfig.TAG, "Failed to replace the routing rules", e)
                     toastError(R.string.toast_failure)
                 }
             }

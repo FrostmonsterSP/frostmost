@@ -10,10 +10,10 @@ import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.SelectListDialog
 
-private enum class ImportMenuAction(@StringRes val labelRes: Int, val action: MainAction) {
-    QRCode(R.string.menu_item_import_config_qrcode, MainAction.ImportQRcode),
-    Clipboard(R.string.menu_item_import_config_clipboard, MainAction.ImportClipboard),
-    LocalFile(R.string.menu_item_import_config_local, MainAction.ImportConfigLocal),
+internal enum class ImportMenuAction(@StringRes val labelRes: Int, val action: MainAction, val isManual: Boolean = true) {
+    QRCode(R.string.menu_item_import_config_qrcode, MainAction.ImportQRcode, isManual = false),
+    Clipboard(R.string.menu_item_import_config_clipboard, MainAction.ImportClipboard, isManual = false),
+    LocalFile(R.string.menu_item_import_config_local, MainAction.ImportConfigLocal, isManual = false),
     PolicyGroup(R.string.menu_item_import_config_policy_group, MainAction.ImportManually(EConfigType.POLICYGROUP.value)),
     ProxyChain(R.string.menu_item_import_config_proxy_chain, MainAction.ImportManually(EConfigType.PROXYCHAIN.value)),
     Vmess(R.string.menu_item_import_config_manually_vmess, MainAction.ImportManually(EConfigType.VMESS.value)),

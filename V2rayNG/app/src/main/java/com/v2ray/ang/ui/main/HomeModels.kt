@@ -26,6 +26,9 @@ sealed interface HomeIssue {
     data object VpnPermissionDenied : HomeIssue
 }
 
+/** Rare destinations reachable from "More"; Promotion is removed in the fork. */
+internal val HOME_MORE_ITEMS: List<MainDestination> = MainDestination.entries - MainDestination.Promotion
+
 /** Group ids the pseudo group "All" uses; it never becomes a card. */
 private const val ALL_GROUP_ID = ""
 

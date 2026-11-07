@@ -10,6 +10,7 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.ConnectionTestResult
 import com.v2ray.ang.dto.RealPingResult
+import com.v2ray.ang.dto.SubscriptionImportResult
 import com.v2ray.ang.dto.SubscriptionUpdateResult
 import com.v2ray.ang.dto.TestServiceMessage
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -199,6 +200,15 @@ class MainRepository(
         subscriptionId: String,
         updateUI: Boolean
     ): Pair<Int, Int> = AngConfigManager.importBatchConfig(server, subscriptionId, updateUI)
+
+    override fun importSubscriptionUrl(url: String): SubscriptionImportResult =
+        AngConfigManager.importSubscriptionUrl(url)
+
+    override fun isValidSubUrl(url: String): Boolean = Utils.isValidSubUrl(url)
+
+    override fun applyRoutingPreset(type: RoutingType) = SettingsManager.resetRoutingRulesetsFromPresets(app, type)
+
+    override fun resetRoutingRulesets(json: String): Boolean = SettingsManager.resetRoutingRulesets(json)
 
     override fun updateConfigViaSubAll(): SubscriptionUpdateResult =
         AngConfigManager.updateConfigViaSubAll()

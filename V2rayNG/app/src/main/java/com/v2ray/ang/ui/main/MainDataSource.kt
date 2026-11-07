@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import com.v2ray.ang.dto.SubscriptionImportResult
 import com.v2ray.ang.dto.SubscriptionUpdateResult
 import com.v2ray.ang.dto.TestServiceMessage
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -51,6 +52,15 @@ interface MainDataSource : Closeable {
         subscriptionId: String,
         updateUI: Boolean
     ): Pair<Int, Int>
+
+    /** Blocking: downloads the subscription. Call off the main thread. */
+    fun importSubscriptionUrl(url: String): SubscriptionImportResult
+    fun isValidSubUrl(url: String): Boolean
+
+    /** Replaces the rules (locked ones stay) with preset [type]. Reads assets: call off the main thread. */
+    fun applyRoutingPreset(type: RoutingType)
+    /** Replaces the rules (locked ones stay) with exported rules [json]; false when it holds no rules. */
+    fun resetRoutingRulesets(json: String): Boolean
 
     fun updateConfigViaSubAll(): SubscriptionUpdateResult
     fun updateConfigViaSub(subscriptionCache: SubscriptionCache): SubscriptionUpdateResult

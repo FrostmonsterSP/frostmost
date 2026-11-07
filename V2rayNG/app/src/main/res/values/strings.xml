@@ -626,5 +626,20 @@
     <string name="home_empty">No subscriptions yet</string>
     <string name="home_empty_hint">The link comes from whoever gave you the VPN, or from your service’s support.</string>
     <string name="home_update_all">Update all subscriptions</string>
+    <string name="home_add_input_label">Link, configuration or rules</string>
+    <string name="home_add_kind_subscription">This is a subscription</string>
+    <string name="home_add_kind_config">These are server configurations</string>
+    <string name="home_add_kind_routing">These are routing rules</string>
+    <string name="home_add_kind_invalid">Not recognized. Paste a subscription link, server links or rules</string>
+    <string name="home_add_other">Other ways</string>
+    <string name="home_rules_add_own">Add your own rules</string>
+    <string name="home_import_invalid">Not recognized as a subscription, configurations or rules</string>
+    <string name="home_import_insecure_url">The subscription link must start with https://</string>
+    <string name="home_import_download_failed">Couldn’t download the subscription</string>
+    <string name="home_import_no_servers">The subscription has no usable servers</string>
+    <string name="home_import_nothing_added">Nothing was added: no valid configurations found</string>
+    <string name="home_import_rules_failed">Couldn’t apply the rules</string>
+    <string name="home_import_subscription_added">Subscription added</string>
+    <string name="home_import_subscription_exists">This subscription is already added</string>
 
 </resources>

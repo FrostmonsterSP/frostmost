@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -202,21 +203,20 @@ internal fun HomeAnnounceStrip(
 }
 
 @Composable
-private fun routingPresetLabel(loaded: Boolean, preset: RoutingType?): String = when {
-    !loaded -> ""
-    else -> stringResource(
-        when (preset) {
-            RoutingType.GLOBAL -> R.string.home_rules_global
-            RoutingType.WHITE_RUSSIA -> R.string.home_rules_russia
-            RoutingType.WHITE_IRAN -> R.string.home_rules_iran
-            RoutingType.WHITE -> R.string.home_rules_china_white
-            RoutingType.BLACK -> R.string.home_rules_china_black
-            null -> R.string.home_rules_custom
-        }
-    )
+private fun routingPresetLabel(loaded: Boolean, preset: RoutingType?): String =
+    if (loaded) stringResource(routingPresetLabelRes(preset)) else ""
+
+@StringRes
+internal fun routingPresetLabelRes(preset: RoutingType?): Int = when (preset) {
+    RoutingType.GLOBAL -> R.string.home_rules_global
+    RoutingType.WHITE_RUSSIA -> R.string.home_rules_russia
+    RoutingType.WHITE_IRAN -> R.string.home_rules_iran
+    RoutingType.WHITE -> R.string.home_rules_china_white
+    RoutingType.BLACK -> R.string.home_rules_china_black
+    null -> R.string.home_rules_custom
 }
 
-/** Active rule set; opens rule selection (the existing routing screen until the rules sheet exists). */
+/** Active rule set; opens the rules sheet. */
 @Composable
 internal fun HomeRulesRow(
     presetLoaded: Boolean,

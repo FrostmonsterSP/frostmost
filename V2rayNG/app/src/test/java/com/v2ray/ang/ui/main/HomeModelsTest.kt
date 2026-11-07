@@ -219,4 +219,8 @@ class HomeModelsTest {
         assertEquals("", resolveHomeGroup(listOf(""), "", null))
         assertEquals("", resolveHomeGroup(emptyList(), "x", "x"))
     }
+
+    @Test fun moreKeepsEverythingExceptPromotion() {
+        assertEquals(MainDestination.entries.toSet() - MainDestination.Promotion, HOME_MORE_ITEMS.toSet())
+    }
 }

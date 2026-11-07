@@ -234,7 +234,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun importQRcode() {
         launchQRCodeScanner { scanResult ->
             if (scanResult != null) {
-                mainViewModel.onAction(MainAction.ImportBatchConfig(scanResult))
+                mainViewModel.onAction(MainAction.ApplyImport(scanResult))
             }
         }
     }
@@ -242,7 +242,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun importClipboard() {
         try {
             val text = Utils.getClipboard(this)
-            mainViewModel.onAction(MainAction.ImportBatchConfig(text))
+            mainViewModel.onAction(MainAction.ApplyImport(text))
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to import config from clipboard", e)
         }
@@ -253,7 +253,7 @@ class MainActivity : HelperBaseComponentActivity() {
             if (uri == null) return@launchFileChooser
             try {
                 contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
-                    mainViewModel.onAction(MainAction.ImportBatchConfig(reader.readText()))
+                    mainViewModel.onAction(MainAction.ApplyImport(reader.readText()))
                 }
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to read content from URI", e)
