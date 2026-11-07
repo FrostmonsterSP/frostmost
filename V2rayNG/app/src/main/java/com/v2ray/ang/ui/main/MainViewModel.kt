@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import android.app.Application
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,6 +11,7 @@ import com.v2ray.ang.dto.ConnectionTestResult
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.LocateTarget
 import com.v2ray.ang.dto.RealPingResult
+import com.v2ray.ang.dto.SubscriptionFailure
 import com.v2ray.ang.dto.SubscriptionImportResult
 import com.v2ray.ang.dto.TestServiceMessage
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -342,6 +344,14 @@ class MainViewModel(
             is MainAction.ApplyImport -> applyImport(action.text)
             is MainAction.PrefillImport -> _uiState.update { it.copy(importDraft = action.text) }
             MainAction.ClearImportDraft -> _uiState.update { it.copy(importDraft = null) }
+            is MainAction.OpenLink -> openLink(action.url)
+            MainAction.ConfirmLink -> (uiState.value.importState as? HomeImportState.Confirm)?.let { applyImport(it.url) }
+            MainAction.DismissLink -> {
+                // The confirm dialog dismisses right after confirming, when the import may already be Downloading.
+                linkJob?.cancel()
+                _uiState.update { if (it.importState is HomeImportState.Downloading) it else it.copy(importState = HomeImportState.Idle) }
+            }
+            MainAction.RetryImport -> (uiState.value.importState as? HomeImportState.Failed)?.let { applyImport(it.url) }
             is MainAction.ApplyRoutingPreset -> _uiState.update { it.copy(pendingRules = PendingRules.Preset(action.type)) }
             MainAction.ConfirmRules -> confirmRules()
             MainAction.DismissRules -> _uiState.update { it.copy(pendingRules = null) }
@@ -538,6 +548,7 @@ class MainViewModel(
                     )
                 }
                 val urls = subscriptionUrls(subscriptions)
+                val serverCount = dataSource.getServerGuidList("").size
                 val selectedGroup = resolveSelectedGroup(groups)
                 val validIds = groups.mapTo(HashSet()) { it.id }
                 groupUiFlows.keys.removeAll { it !in validIds }
@@ -548,6 +559,7 @@ class MainViewModel(
                     it.copy(
                         groups = groups,
                         subscriptionUrls = urls,
+                        serverCount = serverCount,
                         selectedGroupId = selectedGroup,
                         selectedGuid = dataSource.getSelectServer(),
                     )
@@ -612,32 +624,87 @@ class MainViewModel(
         }
     }
 
-    /** Blocking; runs on the IO dispatcher of [applyImport]. The new subscription becomes the selected one. */
+    private var linkJob: Job? = null
+
+    /**
+     * Entry for a link from outside. A subscription asks "Add «title»?" when others exist, and is added
+     * at once on first run; anything else goes through the ordinary import. Never starts the VPN.
+     */
+    private fun openLink(link: String) {
+        linkJob?.cancel()
+        linkJob = viewModelScope.launch(ioDispatcher) {
+            try {
+                val kind = ImportClassifier.classify(link)
+                if (kind !is ImportKind.Subscription) {
+                    applyImport(link)
+                    return@launch
+                }
+                val has = hasSubscriptions()
+                if (!has) {
+                    _uiState.update { it.copy(importState = nextImportState(kind.url, false, null)) }
+                    applyImport(kind.url)
+                    return@launch
+                }
+                _uiState.update { it.copy(importState = HomeImportState.Downloading(kind.url)) }
+                val title = dataSource.previewSubscriptionTitle(kind.url)
+                _uiState.update { it.copy(importState = nextImportState(kind.url, true, title)) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Failed to open an import link", e)
+                _uiState.update { it.copy(importState = HomeImportState.Idle) }
+                toastError(R.string.toast_failure)
+            }
+        }
+    }
+
+    /** A real subscription (not the "All" group, not a manual group) exists. Reads storage: call off the main thread. */
+    private fun hasSubscriptions(): Boolean =
+        dataSource.getSubscriptions().any { it.guid.isNotEmpty() && it.subscription.url.isNotBlank() }
+
+    /**
+     * Blocking; runs on the IO dispatcher of [applyImport]. The new subscription becomes the selected
+     * one; the service is never started or restarted. Progress and, on first run, failure go to [MainUiState.importState].
+     */
     private suspend fun importSubscription(url: String) {
         if (!dataSource.isValidSubUrl(url)) {
             toastError(R.string.home_import_insecure_url)
+            _uiState.update { it.copy(importState = HomeImportState.Idle) }
             return
         }
-        val guid = when (val result = dataSource.importSubscriptionUrl(url)) {
-            is SubscriptionImportResult.Added -> {
-                toastSuccess(R.string.home_import_subscription_added)
-                result.guid
+        val had = hasSubscriptions()
+        _uiState.update { it.copy(importState = HomeImportState.Downloading(url)) }
+        try {
+            val guid = when (val result = dataSource.importSubscriptionUrl(url)) {
+                is SubscriptionImportResult.Added -> {
+                    toastSuccess(R.string.home_import_subscription_added)
+                    result.guid
+                }
+                is SubscriptionImportResult.AlreadyExists -> {
+                    toast(R.string.home_import_subscription_exists)
+                    result.guid
+                }
+                SubscriptionImportResult.DownloadFailed -> {
+                    reportImportFailure(url, had, SubscriptionFailure.DOWNLOAD, R.string.home_import_download_failed)
+                    return
+                }
+                SubscriptionImportResult.NoServers -> {
+                    reportImportFailure(url, had, SubscriptionFailure.NO_SERVERS, R.string.home_import_no_servers)
+                    return
+                }
             }
-            is SubscriptionImportResult.AlreadyExists -> {
-                toast(R.string.home_import_subscription_exists)
-                result.guid
-            }
-            SubscriptionImportResult.DownloadFailed -> {
-                toastError(R.string.home_import_download_failed)
-                return
-            }
-            SubscriptionImportResult.NoServers -> {
-                toastError(R.string.home_import_no_servers)
-                return
-            }
+            setupGroupTab(forceRefresh = true).join()
+            subscriptionIdChanged(guid)
+        } finally {
+            // Success, a thrown error and cancellation all end the "downloading" state; a failure keeps its own.
+            _uiState.update { if (it.importState is HomeImportState.Downloading) it.copy(importState = HomeImportState.Idle) else it }
         }
-        setupGroupTab(forceRefresh = true).join()
-        subscriptionIdChanged(guid)
+    }
+
+    /** First run keeps the error on screen with a retry; otherwise it is a toast. */
+    private fun reportImportFailure(url: String, hasSubscriptions: Boolean, reason: SubscriptionFailure, @StringRes message: Int) {
+        if (hasSubscriptions) toastError(message)
+        _uiState.update { it.copy(importState = importFailureState(url, hasSubscriptions, reason)) }
     }
 
     /** Blocking; runs on the IO dispatcher of [applyImport]. */

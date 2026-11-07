@@ -56,6 +56,8 @@ interface MainDataSource : Closeable {
     /** Blocking: downloads the subscription. Call off the main thread. */
     fun importSubscriptionUrl(url: String): SubscriptionImportResult
     fun isValidSubUrl(url: String): Boolean
+    /** Blocking: downloads the subscription headers. Call off the main thread; null when there is no title. */
+    fun previewSubscriptionTitle(url: String): String?
 
     /** Replaces the rules (locked ones stay) with preset [type]. Reads assets: call off the main thread. */
     fun applyRoutingPreset(type: RoutingType)

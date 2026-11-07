@@ -645,4 +645,11 @@
     <string name="home_import_subscription_added">Подписка добавлена</string>
     <string name="home_import_subscription_exists">Эта подписка уже добавлена</string>
 
+    <string name="home_first_title">Добавьте подписку</string>
+    <string name="home_first_field">Ссылка на подписку</string>
+    <string name="home_first_paste">Вставить</string>
+    <string name="home_first_manual">Настроить вручную</string>
+    <string name="home_import_downloading">Скачиваю подписку…</string>
+    <string name="home_import_retry">Повторить</string>
+    <string name="home_link_confirm">Добавить подписку «%1$s»?</string>
 </resources>

@@ -206,6 +206,8 @@ class MainRepository(
 
     override fun isValidSubUrl(url: String): Boolean = Utils.isValidSubUrl(url)
 
+    override fun previewSubscriptionTitle(url: String): String? = AngConfigManager.previewSubscriptionTitle(url)
+
     override fun applyRoutingPreset(type: RoutingType) = SettingsManager.resetRoutingRulesetsFromPresets(app, type)
 
     override fun resetRoutingRulesets(json: String): Boolean = SettingsManager.resetRoutingRulesets(json)

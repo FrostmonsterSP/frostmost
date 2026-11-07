@@ -56,6 +56,11 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : HelperBaseComponentActivity() {
 
+    companion object {
+        /** Address from a deep link or "share" for the home screen to import; "" when the link was not acceptable. */
+        const val EXTRA_IMPORT_LINK = "com.v2ray.ang.extra.IMPORT_LINK"
+    }
+
     private val mainViewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, MainRepository(application as AngApplication))
     }
@@ -97,7 +102,26 @@ class MainActivity : HelperBaseComponentActivity() {
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
 
+        // Only a fresh launch: after recreation the extra was already handled (and cleared).
+        if (savedInstanceState == null) handleImportLink(intent)
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleImportLink(intent)
+    }
+
+    /**
+     * Hands a link from [com.v2ray.ang.ui.UrlSchemeActivity] to the view model, then removes the extra so
+     * recreation or a later onNewIntent does not import it again. A blank value means an invalid link.
+     */
+    private fun handleImportLink(source: Intent) {
+        if (!source.hasExtra(EXTRA_IMPORT_LINK)) return
+        val link = source.getStringExtra(EXTRA_IMPORT_LINK).orEmpty()
+        source.removeExtra(EXTRA_IMPORT_LINK)
+        mainViewModel.onAction(MainAction.OpenLink(link))
     }
 
     @Composable

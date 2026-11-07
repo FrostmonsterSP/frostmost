@@ -48,7 +48,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Which bottom sheet the home screen shows; null means none. */
-internal enum class HomeSheet { Add, Rules, More }
+internal enum class HomeSheet { Add, Rules, More, Ways }
 
 /** Group id the repository uses for "update all subscriptions". */
 private const val ALL_SUBSCRIPTIONS_ID = ""
@@ -95,6 +95,13 @@ internal fun HomeSheetHost(
                     presetLoaded = routingPresetLoaded,
                     onAction = act,
                     onAddOwn = { onSheetChange(HomeSheet.Add) },
+                )
+                HomeSheet.Ways -> WaysSheetContent(
+                    onAction = act,
+                    onNavigate = { destination ->
+                        onSheetChange(null)
+                        onNavigate(destination)
+                    },
                 )
                 HomeSheet.More -> MoreSheetContent(
                     onAction = act,
@@ -146,7 +153,7 @@ private fun SheetRow(label: String, iconRes: Int? = null, onClick: () -> Unit) {
 
 /** Recognized type of [text], classified off the main thread; null while classifying or when blank. */
 @Composable
-private fun rememberImportKind(text: String): ImportKind? {
+internal fun rememberImportKind(text: String): ImportKind? {
     val kind by produceState<ImportKind?>(initialValue = null, text) {
         value = if (text.isBlank()) null else withContext(Dispatchers.Default) { ImportClassifier.classify(text) }
     }
@@ -273,6 +280,34 @@ private fun MoreSheetContent(
         }
         HOME_MORE_ITEMS.forEach { destination ->
             SheetRow(stringResource(destination.labelRes), destination.iconRes) { onNavigate(destination) }
+        }
+    }
+}
+
+/** First-run "Other ways": QR code, file, backup and manual setup, so nobody with a QR code or an old copy is stuck. */
+@Composable
+private fun WaysSheetContent(
+    onAction: (MainAction) -> Unit,
+    onNavigate: (MainDestination) -> Unit,
+) {
+    var showManual by rememberSaveable { mutableStateOf(false) }
+    Column(
+        Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 16.dp),
+    ) {
+        SheetTitle(R.string.home_add_other)
+        ImportMenuAction.entries.filter { !it.isManual && it != ImportMenuAction.Clipboard }.forEach { item ->
+            SheetRow(stringResource(item.labelRes)) { onAction(item.action) }
+        }
+        SheetRow(stringResource(MainDestination.BackupRestore.labelRes), MainDestination.BackupRestore.iconRes) {
+            onNavigate(MainDestination.BackupRestore)
+        }
+        SheetRow(stringResource(R.string.home_first_manual)) { showManual = !showManual }
+        if (showManual) {
+            ImportMenuAction.entries.filter { it.isManual }.forEach { item ->
+                SheetRow(stringResource(item.labelRes)) { onAction(item.action) }
+            }
         }
     }
 }

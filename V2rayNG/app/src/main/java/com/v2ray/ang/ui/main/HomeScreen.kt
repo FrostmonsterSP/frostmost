@@ -128,6 +128,22 @@ fun HomeScreen(
 
     val dialogs = rememberHomeDialogs(onAction)
     dialogs.Show(confirmRemove = uiState.confirmRemove, qrBitmap = uiState.shareQRCodeBitmap)
+    (uiState.importState as? HomeImportState.Confirm)?.let { HomeLinkConfirm(it, onAction) }
+
+    // Downloading replaces the page (never an empty home); first run shows only its form.
+    if (uiState.importState is HomeImportState.Downloading) {
+        HomeDownloading()
+        return
+    }
+    val serverCount = uiState.serverCount
+    if (serverCount != null && shouldShowFirstRun(cards, serverCount)) {
+        HomeFirstRun(
+            failed = uiState.importState as? HomeImportState.Failed,
+            onAction = onAction,
+            onOtherWays = { sheet = HomeSheet.Ways },
+        )
+        return
+    }
 
     val density = LocalDensity.current
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()

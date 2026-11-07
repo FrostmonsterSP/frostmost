@@ -42,6 +42,10 @@ data class MainUiState(
     val pendingRules: PendingRules? = null,
     /** Text fetched from the clipboard, a QR code or a file, waiting in the Add sheet for the user to confirm; null when none. */
     val importDraft: String? = null,
+    /** Number of stored servers across all groups; null until the first group load, so first run is not flashed at start. */
+    val serverCount: Int? = null,
+    /** Deep-link confirmation, download progress and first-run failure of a subscription import. */
+    val importState: HomeImportState = HomeImportState.Idle,
 )
 
 /** A replacement of the routing rules that needs the "existing rules will be deleted" confirmation. */
@@ -95,6 +99,12 @@ sealed interface MainAction {
     data class ApplyRoutingPreset(val type: RoutingType) : MainAction
     data object ConfirmRules : MainAction
     data object DismissRules : MainAction
+
+    /** A link from the URL scheme or "share": asks first unless it is the first subscription. [url] may be blank (invalid link). */
+    data class OpenLink(val url: String) : MainAction
+    data object ConfirmLink : MainAction
+    data object DismissLink : MainAction
+    data object RetryImport : MainAction
 
     data object LocateHandled : MainAction
 

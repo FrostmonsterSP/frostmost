@@ -642,4 +642,11 @@
     <string name="home_import_subscription_added">Subscription added</string>
     <string name="home_import_subscription_exists">This subscription is already added</string>
 
+    <string name="home_first_title">Add a subscription</string>
+    <string name="home_first_field">Subscription link</string>
+    <string name="home_first_paste">Paste</string>
+    <string name="home_first_manual">Set up manually</string>
+    <string name="home_import_downloading">Downloading the subscription…</string>
+    <string name="home_import_retry">Retry</string>
+    <string name="home_link_confirm">Add the subscription “%1$s”?</string>
 </resources>
