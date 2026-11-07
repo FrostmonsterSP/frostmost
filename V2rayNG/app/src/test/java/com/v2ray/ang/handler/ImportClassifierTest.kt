@@ -59,4 +59,28 @@ class ImportClassifierTest {
         assertNull(ImportClassifier.parseDeepLink("install-config", "javascript:alert(1)"))
         assertNull(ImportClassifier.parseDeepLink("install-config", "  "))
     }
+
+    private fun b64(text: String) = Base64.getEncoder().encodeToString(text.toByteArray())
+
+    @Test
+    fun acceptsSchemesThatImportBatchConfigParses() {
+        assertEquals(ImportKind.Config, classify("hy2://p@h:443#n"))
+        assertEquals(ImportKind.Config, classify("socks5://u:p@h:1080"))
+        assertEquals(ImportKind.Config, classify("v2rayn://abc"))
+        assertEquals(ImportKind.Invalid, classify("hysteria://h:443"))
+        assertEquals("hy2://p@h:443#n", ImportClassifier.parseDeepLink("install-config", "hy2://p@h:443#n")?.url)
+    }
+
+    @Test
+    fun multiLineAndMixedInputKeepsBatchImport() {
+        assertEquals(ImportKind.Config, classify("https://a.b/1\nhttps://c.d/2"))
+        assertEquals(ImportKind.Config, classify("мои ссылки:\nhttps://a.b/1"))
+        assertEquals(ImportKind.Subscription("https://a.b/1"), classify("\nhttps://a.b/1\n"))
+    }
+
+    @Test
+    fun base64OfUrls() {
+        assertEquals(ImportKind.Subscription("https://a.b/1"), classify(b64("https://a.b/1")))
+        assertEquals(ImportKind.Config, classify(b64("https://a.b/1\nhttps://c.d/2")))
+    }
 }

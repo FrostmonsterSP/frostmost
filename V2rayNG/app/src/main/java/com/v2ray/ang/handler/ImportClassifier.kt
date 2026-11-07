@@ -3,7 +3,7 @@ package com.v2ray.ang.handler
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.util.Utils
 import java.net.URI
 
@@ -23,11 +23,13 @@ object ImportClassifier {
     private const val HOST_INSTALL_SUB = "install-sub"
     private const val HOST_INSTALL_CONFIG = "install-config"
 
-    // Config links are protocol links other than http(s), which mean a subscription.
-    private val configSchemes: List<String> = EConfigType.entries
-        .map { it.protocolScheme }
-        .filter { it.isNotEmpty() && it != EConfigType.HTTP.protocolScheme }
-        .distinct()
+    // Link schemes importBatchConfig parses (AngConfigManager.configFmtParsers plus v2rayn://).
+    // hysteria:// is deliberately absent: parseConfig does not handle it.
+    private val configSchemes: List<String> = listOf(
+        AppConfig.VMESS, AppConfig.SHADOWSOCKS, AppConfig.SOCKS, AppConfig.SOCKS4, AppConfig.SOCKS5,
+        AppConfig.TROJAN, AppConfig.VLESS, AppConfig.WIREGUARD, AppConfig.HYSTERIA2, AppConfig.HY2,
+        AppConfig.V2RAYNFMTS,
+    )
 
     /**
      * @param decode base64 decoder returning an empty string on failure; injectable because
@@ -37,14 +39,13 @@ object ImportClassifier {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return ImportKind.Invalid
 
-        if (isHttpUrl(trimmed)) return ImportKind.Subscription(trimmed)
-        if (hasConfigLink(trimmed)) return ImportKind.Config
-
         if (trimmed.startsWith("{") || trimmed.startsWith("[")) return classifyJson(trimmed)
 
-        // Same order as importBatchConfig: a base64 payload that holds protocol links.
+        classifyLines(trimmed)?.let { return it }
+
+        // Same order as importBatchConfig: a base64 payload holding links or URLs.
         val decoded = decode(trimmed).trim()
-        if (decoded.isNotEmpty() && hasConfigLink(decoded)) return ImportKind.Config
+        if (decoded.isNotEmpty()) classifyLines(decoded)?.let { return it }
         return ImportKind.Invalid
     }
 
@@ -63,11 +64,20 @@ object ImportClassifier {
         return if (accepted) DeepLinkRequest(url) else null
     }
 
-    private fun hasConfigLink(text: String): Boolean =
-        text.lineSequence().any { line ->
-            val l = line.trim()
-            configSchemes.any { l.startsWith(it, ignoreCase = true) }
-        }
+    private fun isConfigLink(line: String): Boolean =
+        configSchemes.any { line.startsWith(it, ignoreCase = it == AppConfig.V2RAYNFMTS) }
+
+    private fun hasConfigLink(text: String): Boolean = text.lineSequence().any { isConfigLink(it.trim()) }
+
+    /** Null when no line is an http(s) URL or a config link. */
+    private fun classifyLines(text: String): ImportKind? {
+        val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        if (lines.size == 1 && isHttpUrl(lines[0])) return ImportKind.Subscription(lines[0])
+        // Several lines, or a URL among other text: Config keeps batch import (links and
+        // subscription URLs in one paste) working through importBatchConfig.
+        if (lines.any { isHttpUrl(it) || isConfigLink(it) }) return ImportKind.Config
+        return null
+    }
 
     private fun isHttpUrl(value: String): Boolean {
         if (value.any { it.isWhitespace() }) return false
