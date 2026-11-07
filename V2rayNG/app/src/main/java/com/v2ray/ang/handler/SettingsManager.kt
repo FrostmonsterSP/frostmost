@@ -73,6 +73,19 @@ object SettingsManager {
     }
 
     /**
+     * Detect which routing preset the current unlocked rules equal.
+     * @param context The application context.
+     * @return The matching preset, or null for custom rules.
+     */
+    fun currentRoutingPreset(context: Context): RoutingType? {
+        val current = MmkvManager.decodeRoutingRulesets() ?: return null
+        val presets = RoutingType.entries.mapNotNull { type ->
+            getPresetRoutingRulesets(context, type)?.let { type to it }
+        }.toMap()
+        return RoutingPresetMatcher.match(current, presets)
+    }
+
+    /**
      * Reset routing rulesets from presets.
      * @param context The application context.
      * @param type The routing preset type.
