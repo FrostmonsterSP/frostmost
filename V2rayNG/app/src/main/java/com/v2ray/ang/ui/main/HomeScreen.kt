@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -109,12 +110,18 @@ fun HomeScreen(
     BackHandler(enabled = sheetOpen) { scope.launch { sheetState.partialExpand() } }
 
     var sheet by rememberSaveable { mutableStateOf<HomeSheet?>(null) }
+    // A clipboard, QR or file result arrives after the Add sheet closed: reopen it with the text and its type.
+    LaunchedEffect(uiState.importDraft) { if (uiState.importDraft != null) sheet = HomeSheet.Add }
     HomeSheetHost(
         sheet = sheet,
-        onSheetChange = { sheet = it },
+        onSheetChange = {
+            sheet = it
+            if (it != HomeSheet.Add) onAction(MainAction.ClearImportDraft)
+        },
         routingPreset = uiState.routingPreset,
         routingPresetLoaded = uiState.routingPresetLoaded,
         pendingRules = uiState.pendingRules,
+        importDraft = uiState.importDraft,
         onAction = onAction,
         onNavigate = onNavigate,
     )

@@ -636,10 +636,10 @@
     <string name="home_add_kind_invalid">Не распознано. Вставьте ссылку на подписку, ссылки на серверы или правила</string>
     <string name="home_add_other">Другие способы</string>
     <string name="home_rules_add_own">Добавить свои правила</string>
-    <string name="home_import_invalid">Не похоже на подписку, конфигурации или правила</string>
+    <string name="home_import_invalid">Это не похоже на ссылку подписки</string>
     <string name="home_import_insecure_url">Ссылка на подписку должна начинаться с https://</string>
-    <string name="home_import_download_failed">Не удалось скачать подписку</string>
-    <string name="home_import_no_servers">В подписке нет подходящих серверов</string>
+    <string name="home_import_download_failed">Не удалось скачать подписку. Проверьте интернет</string>
+    <string name="home_import_no_servers">В подписке нет серверов. Спросите у того, кто её дал</string>
     <string name="home_import_nothing_added">Ничего не добавлено: рабочих конфигураций не найдено</string>
     <string name="home_import_rules_failed">Не удалось применить правила</string>
     <string name="home_import_subscription_added">Подписка добавлена</string>

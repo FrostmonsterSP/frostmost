@@ -234,7 +234,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun importQRcode() {
         launchQRCodeScanner { scanResult ->
             if (scanResult != null) {
-                mainViewModel.onAction(MainAction.ApplyImport(scanResult))
+                mainViewModel.onAction(MainAction.PrefillImport(scanResult))
             }
         }
     }
@@ -242,7 +242,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun importClipboard() {
         try {
             val text = Utils.getClipboard(this)
-            mainViewModel.onAction(MainAction.ApplyImport(text))
+            mainViewModel.onAction(MainAction.PrefillImport(text))
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to import config from clipboard", e)
         }
@@ -251,12 +251,13 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun importConfigLocal() {
         launchFileChooser { uri ->
             if (uri == null) return@launchFileChooser
-            try {
-                contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
-                    mainViewModel.onAction(MainAction.ApplyImport(reader.readText()))
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val text = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    if (text != null) withContext(Dispatchers.Main) { mainViewModel.onAction(MainAction.PrefillImport(text)) }
+                } catch (e: Exception) {
+                    LogUtil.e(AppConfig.TAG, "Failed to read content from URI", e)
                 }
-            } catch (e: Exception) {
-                LogUtil.e(AppConfig.TAG, "Failed to read content from URI", e)
             }
         }
     }

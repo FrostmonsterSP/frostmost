@@ -74,6 +74,7 @@ internal fun HomeSheetHost(
     routingPreset: RoutingType?,
     routingPresetLoaded: Boolean,
     pendingRules: PendingRules?,
+    importDraft: String?,
     onAction: (MainAction) -> Unit,
     onNavigate: (MainDestination) -> Unit,
 ) {
@@ -88,7 +89,7 @@ internal fun HomeSheetHost(
                 onAction(action)
             }
             when (sheet) {
-                HomeSheet.Add -> AddSheetContent(onAction = act)
+                HomeSheet.Add -> AddSheetContent(draft = importDraft, onAction = act)
                 HomeSheet.Rules -> RulesSheetContent(
                     preset = routingPreset,
                     presetLoaded = routingPresetLoaded,
@@ -153,8 +154,8 @@ private fun rememberImportKind(text: String): ImportKind? {
 }
 
 @Composable
-private fun AddSheetContent(onAction: (MainAction) -> Unit) {
-    var text by rememberSaveable { mutableStateOf("") }
+private fun AddSheetContent(draft: String?, onAction: (MainAction) -> Unit) {
+    var text by rememberSaveable(draft) { mutableStateOf(draft.orEmpty()) }
     var showOther by rememberSaveable { mutableStateOf(false) }
     val kind = rememberImportKind(text)
     Column(

@@ -633,10 +633,10 @@
     <string name="home_add_kind_invalid">Not recognized. Paste a subscription link, server links or rules</string>
     <string name="home_add_other">Other ways</string>
     <string name="home_rules_add_own">Add your own rules</string>
-    <string name="home_import_invalid">Not recognized as a subscription, configurations or rules</string>
+    <string name="home_import_invalid">This doesn’t look like a subscription link</string>
     <string name="home_import_insecure_url">The subscription link must start with https://</string>
-    <string name="home_import_download_failed">Couldn’t download the subscription</string>
-    <string name="home_import_no_servers">The subscription has no usable servers</string>
+    <string name="home_import_download_failed">Couldn’t download the subscription. Check your internet</string>
+    <string name="home_import_no_servers">The subscription has no servers. Ask whoever gave it to you</string>
     <string name="home_import_nothing_added">Nothing was added: no valid configurations found</string>
     <string name="home_import_rules_failed">Couldn’t apply the rules</string>
     <string name="home_import_subscription_added">Subscription added</string>

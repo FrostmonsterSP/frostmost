@@ -340,6 +340,8 @@ class MainViewModel(
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
             is MainAction.Search -> filterConfig(action.query)
             is MainAction.ApplyImport -> applyImport(action.text)
+            is MainAction.PrefillImport -> _uiState.update { it.copy(importDraft = action.text) }
+            MainAction.ClearImportDraft -> _uiState.update { it.copy(importDraft = null) }
             is MainAction.ApplyRoutingPreset -> _uiState.update { it.copy(pendingRules = PendingRules.Preset(action.type)) }
             MainAction.ConfirmRules -> confirmRules()
             MainAction.DismissRules -> _uiState.update { it.copy(pendingRules = null) }

@@ -40,6 +40,8 @@ data class MainUiState(
     val routingPresetLoaded: Boolean = false,
     /** Rules replacement waiting for the user's confirmation; null when none. */
     val pendingRules: PendingRules? = null,
+    /** Text fetched from the clipboard, a QR code or a file, waiting in the Add sheet for the user to confirm; null when none. */
+    val importDraft: String? = null,
 )
 
 /** A replacement of the routing rules that needs the "existing rules will be deleted" confirmation. */
@@ -87,6 +89,9 @@ sealed interface MainAction {
 
     /** Imports pasted, scanned or file text: a subscription, configurations, or routing rules (after confirmation). */
     data class ApplyImport(val text: String) : MainAction
+    /** Shows [text] in the Add sheet with its recognized type instead of importing it at once. */
+    data class PrefillImport(val text: String) : MainAction
+    data object ClearImportDraft : MainAction
     data class ApplyRoutingPreset(val type: RoutingType) : MainAction
     data object ConfirmRules : MainAction
     data object DismissRules : MainAction
