@@ -16,6 +16,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServerAffiliationInfo
 import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.dto.entities.SubscriptionItem
+import com.v2ray.ang.enums.RoutingType
 import com.v2ray.ang.extension.serializable
 import com.v2ray.ang.handler.AngConfigManager
 import com.v2ray.ang.handler.AppLocaleManager
@@ -234,6 +235,8 @@ class MainRepository(
             if (!handled) mainServiceEventChannel.trySend(MainServiceEvent.MeasureDelayCancelled(requestId))
         }
     }
+
+    override fun currentRoutingPreset(): RoutingType? = SettingsManager.currentRoutingPreset(app)
 
     override fun syncSubscriptions() {
         SubscriptionUpdater.sync(app)

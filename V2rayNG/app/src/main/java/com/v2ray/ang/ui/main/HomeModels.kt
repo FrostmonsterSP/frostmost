@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import com.v2ray.ang.dto.GroupMapItem
+import com.v2ray.ang.dto.entities.SubscriptionCache
 
 /** Pure model of the home screen; no Android or Compose dependencies. Identity is by group id / server GUID only. */
 internal data class HomeCard(
@@ -77,6 +78,41 @@ internal fun highlightedAction(card: HomeCard, issue: HomeIssue?): HomeAction? =
     HomeIssue.ServerUnreachable, HomeIssue.VpnPermissionDenied, null -> null
 }
 
+/** Highlight only an action the row actually shows: [highlightedAction] names UPDATE even for a manual card. */
+internal fun visibleHighlight(card: HomeCard, issue: HomeIssue?): HomeAction? =
+    highlightedAction(card, issue)?.takeIf { it in homeActions(card) }
+
+/** Status line of the card; locale-neutral, formatted by the UI. */
+internal enum class HomeStatus { DISCONNECTED, CONNECTING, SWITCHING, CONNECTED, FAILED }
+
+/** An open undo window wins, then a start or restart in flight, then the running state, then a failed start. */
+internal fun homeStatus(
+    isRunning: Boolean,
+    isConnecting: Boolean,
+    undoPending: Boolean,
+    issue: HomeIssue?,
+): HomeStatus = when {
+    undoPending -> HomeStatus.SWITCHING
+    isConnecting -> HomeStatus.CONNECTING
+    isRunning -> HomeStatus.CONNECTED
+    issue == HomeIssue.ServerUnreachable -> HomeStatus.FAILED
+    else -> HomeStatus.DISCONNECTED
+}
+
+/**
+ * Card the home screen shows: the selected group when it is a card, else the first card (the selected
+ * group can be the pseudo group "All" or one that was just removed), else null for an empty list.
+ */
+internal fun displayedCardId(cards: List<HomeCard>, selectedGroupId: String): String? =
+    cards.firstOrNull { it.id == selectedGroupId }?.id ?: cards.firstOrNull()?.id
+
+/** Group id to subscription URL, taken from the same subscription load that builds the groups. */
+internal fun subscriptionUrls(subscriptions: List<SubscriptionCache>): Map<String, String> =
+    subscriptions.associate { it.guid to it.subscription.url }
+
+/** Last successful update for the "not updated" strip; null when unknown (-1 on "update all"), so no bogus date is shown. */
+internal fun updateFailedDate(issue: HomeIssue.UpdateFailed): Long? = issue.lastUpdated.takeIf { it > 0L }
+
 /** Remembered server if it still exists in the group, else the group's first server, else null. */
 internal fun resolveServerForSubscription(remembered: String?, groupGuids: List<String>): String? =
     remembered?.takeIf { it in groupGuids } ?: groupGuids.firstOrNull()
@@ -88,5 +124,8 @@ internal fun shouldShowFirstRun(cards: List<HomeCard>, serverCount: Int): Boolea
 internal val HOME_ACCENTS: List<Long> = listOf(
     0xFF2447C8, 0xFF6B2A80, 0xFF0E6A70, 0xFF1F6B3A, 0xFF8C1D40, 0xFF7A4A00,
 )
+
+/** White overlay behind chips, actions and strips drawn on an accent background; keeps white text at 4.5:1 on every accent. */
+internal const val HOME_ON_ACCENT_OVERLAY = 0.12f
 
 internal fun accentFor(id: String): Int = Math.floorMod(id.hashCode(), HOME_ACCENTS.size)

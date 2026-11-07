@@ -3,6 +3,7 @@ package com.v2ray.ang.ui.main
 import com.v2ray.ang.dto.ConnectionTestResult
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.LocateTarget
+import com.v2ray.ang.enums.RoutingType
 
 /** Locale-neutral state formatted only when it reaches the main UI. */
 sealed interface MainStatus {
@@ -32,6 +33,11 @@ data class MainUiState(
     val homeIssue: HomeIssue? = null,
     /** True from the user's start request until the service reports success or failure. */
     val isConnecting: Boolean = false,
+    /** Subscription URL per group id, from the same load as [groups]; empty for a manual group. */
+    val subscriptionUrls: Map<String, String> = emptyMap(),
+    /** Routing preset the current rules equal; null means custom rules (or not loaded yet, see [routingPresetLoaded]). */
+    val routingPreset: RoutingType? = null,
+    val routingPresetLoaded: Boolean = false,
 )
 
 /**

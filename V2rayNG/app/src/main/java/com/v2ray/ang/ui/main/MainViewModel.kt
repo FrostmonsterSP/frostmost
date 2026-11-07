@@ -124,6 +124,7 @@ class MainViewModel(
         },
     )
     private var switchServerJob: Job? = null
+    private var routingPresetJob: Job? = null
 
     // ---------- Service events ----------
     init {
@@ -137,6 +138,7 @@ class MainViewModel(
             }
         }
         setupGroupTab()
+        refreshRoutingPreset()
     }
 
     private fun collectServiceEvents() {
@@ -385,6 +387,23 @@ class MainViewModel(
                 doubleColumnDisplay = dataSource.getDoubleColumnDisplay()
             )
         }
+        refreshRoutingPreset()
+    }
+
+    /** Re-detects the active routing preset; the routing screen may have changed the rules. */
+    private fun refreshRoutingPreset() {
+        routingPresetJob?.cancel()
+        routingPresetJob = viewModelScope.launch {
+            try {
+                val preset = withContext(ioDispatcher) { dataSource.currentRoutingPreset() }
+                _uiState.update { it.copy(routingPreset = preset, routingPresetLoaded = true) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                LogUtil.e(AppConfig.TAG, "Failed to detect the routing preset", error)
+                _uiState.update { it.copy(routingPreset = null, routingPresetLoaded = true) }
+            }
+        }
     }
 
     // ---------- Group & server loading ----------
@@ -498,7 +517,8 @@ class MainViewModel(
                 if (forceRefresh) {
                     cacheMutex.withLock { groupDataCache.clear() }
                 }
-                val groups = dataSource.getSubscriptions().map {
+                val subscriptions = dataSource.getSubscriptions()
+                val groups = subscriptions.map {
                     GroupMapItem(
                         id = it.guid,
                         remarks = it.subscription.remarks,
@@ -507,6 +527,7 @@ class MainViewModel(
                         },
                     )
                 }
+                val urls = subscriptionUrls(subscriptions)
                 val selectedGroup = resolveSelectedGroup(groups)
                 val validIds = groups.mapTo(HashSet()) { it.id }
                 groupUiFlows.keys.removeAll { it !in validIds }
@@ -516,6 +537,7 @@ class MainViewModel(
                 _uiState.update {
                     it.copy(
                         groups = groups,
+                        subscriptionUrls = urls,
                         selectedGroupId = selectedGroup,
                         selectedGuid = dataSource.getSelectServer(),
                     )

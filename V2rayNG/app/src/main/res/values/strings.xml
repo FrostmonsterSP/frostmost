@@ -565,4 +565,66 @@
     <string name="sub_info_traffic" translatable="false">%1$s / %2$s</string>
     <string name="sub_info_unlimited">Unlimited</string>
 
+    <!-- Home screen -->
+    <string name="home_add">Add</string>
+    <string name="home_more">More</string>
+    <string name="home_subscriptions">Subscriptions</string>
+    <string name="home_configure">Configure</string>
+    <string name="home_configure_named">Configure “%1$s”</string>
+    <string name="home_card_select">Select</string>
+    <string name="home_card_named">Subscription “%1$s”</string>
+    <string name="home_traffic_of">%1$s of %2$s</string>
+    <string name="home_traffic_used_up">%1$s of %2$s, traffic used up</string>
+    <string name="home_traffic_unlimited">%1$s, no limit</string>
+    <string name="home_traffic_unknown">Traffic unknown</string>
+    <string name="home_expire_until">until %1$s</string>
+    <string name="home_expired_on">expired on %1$s</string>
+    <string name="home_expire_none">no expiry</string>
+    <string name="home_power_on">Turn on</string>
+    <string name="home_power_off">Turn off</string>
+    <string name="home_status_disconnected">Disconnected</string>
+    <string name="home_status_connecting">Connecting…</string>
+    <string name="home_status_switching">Switching</string>
+    <string name="home_status_connected">Connected</string>
+    <string name="home_status_failed">Couldn’t connect</string>
+    <string name="home_server">Server: %1$s</string>
+    <string name="home_server_delay">%1$s, %2$d ms</string>
+    <string name="home_server_none">No server selected</string>
+    <string name="home_action_update">Update</string>
+    <string name="home_action_updating">Updating…</string>
+    <string name="home_action_cabinet">Account</string>
+    <string name="home_action_support">Support</string>
+    <string name="home_issue_update_failed_on">Not updated, showing servers from %1$s</string>
+    <string name="home_issue_update_failed">Not updated, showing the previous servers</string>
+    <string name="home_issue_server">Server not responding, try another one</string>
+    <string name="home_issue_server_action">Another server</string>
+    <string name="home_issue_expired">The subscription has expired, the VPN may not work. Renew it in your account</string>
+    <string name="home_issue_traffic">Traffic is used up. Top up the subscription in your account</string>
+    <string name="home_issue_permission">Without Android’s permission the VPN won’t turn on</string>
+    <string name="home_issue_permission_action">Allow</string>
+    <string name="home_announce_expand">Expand</string>
+    <string name="home_announce_collapse">Collapse</string>
+    <string name="home_announce_expanded">Expanded</string>
+    <string name="home_announce_collapsed">Collapsed</string>
+    <string name="home_rules">Rules</string>
+    <string name="home_rules_choose">Choose rules</string>
+    <string name="home_rules_custom">Custom rules</string>
+    <string name="home_rules_global">Everything through VPN</string>
+    <string name="home_rules_russia">Russia</string>
+    <string name="home_rules_iran">Iran</string>
+    <string name="home_rules_china_white">China, whitelist</string>
+    <string name="home_rules_china_black">China, blacklist</string>
+    <string name="home_servers">Servers</string>
+    <string name="home_servers_show">Show servers</string>
+    <string name="home_servers_hide">Hide servers</string>
+    <string name="home_servers_menu">Server list actions</string>
+    <string name="home_check">Check</string>
+    <string name="home_check_stop">Stop</string>
+    <string name="home_restart">Restart</string>
+    <string name="home_switching_to">Switching to “%1$s”</string>
+    <string name="home_undo">Undo</string>
+    <string name="home_empty">No subscriptions yet</string>
+    <string name="home_empty_hint">The link comes from whoever gave you the VPN, or from your service’s support.</string>
+    <string name="home_update_all">Update all subscriptions</string>
+
 </resources>

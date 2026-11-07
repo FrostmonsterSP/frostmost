@@ -45,6 +45,7 @@ import com.v2ray.ang.ui.server.ServerVlessActivity
 import com.v2ray.ang.ui.server.ServerVmessActivity
 import com.v2ray.ang.ui.server.ServerWireguardActivity
 import com.v2ray.ang.ui.settings.SettingsActivity
+import com.v2ray.ang.ui.subscription.SubEditActivity
 import com.v2ray.ang.ui.subscription.SubSettingActivity
 import com.v2ray.ang.ui.userasset.UserAssetActivity
 import com.v2ray.ang.util.LogUtil
@@ -102,7 +103,7 @@ class MainActivity : HelperBaseComponentActivity() {
     @Composable
     override fun ScreenContent() {
         BackHandler { moveTaskToBack(false) }
-        MainScreen(
+        HomeScreen(
             mainViewModel = mainViewModel,
             onAction = { action ->
                 when (action) {
@@ -122,7 +123,13 @@ class MainActivity : HelperBaseComponentActivity() {
                 }
             },
             onNavigate = { route -> navigateTo(route) },
+            onEditSubscription = { id -> editSubscription(id) },
         )
+    }
+
+    /** "Configure" uses the existing subscription editor in this first version. */
+    private fun editSubscription(subId: String) {
+        settingsActivityLauncher.launch(Intent(this, SubEditActivity::class.java).putExtra("subId", subId))
     }
 
     private fun shareToClipboard(guid: String): Boolean =

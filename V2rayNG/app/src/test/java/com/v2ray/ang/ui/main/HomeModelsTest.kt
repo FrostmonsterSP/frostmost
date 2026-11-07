@@ -1,6 +1,8 @@
 package com.v2ray.ang.ui.main
 
 import com.v2ray.ang.dto.GroupMapItem
+import com.v2ray.ang.dto.entities.SubscriptionCache
+import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.dto.entities.SubscriptionUsageInfo
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -120,5 +122,71 @@ class HomeModelsTest {
         assertEquals(accentFor("x"), accentFor("x"))
         assertTrue(accentFor("anything") in HOME_ACCENTS.indices)
         HOME_ACCENTS.forEach { assertTrue(contrastWithWhite(it) >= 4.5) }
+    }
+
+    // ---------- Home screen helpers ----------
+
+    @Test fun visibleHighlightDropsActionsTheRowDoesNotShow() {
+        val manual = card(isManual = true)
+        assertEquals(HomeAction.UPDATE, highlightedAction(manual, HomeIssue.UpdateFailed(5L)))
+        assertNull(visibleHighlight(manual, HomeIssue.UpdateFailed(5L)))
+        assertEquals(HomeAction.UPDATE, visibleHighlight(card(), HomeIssue.UpdateFailed(5L)))
+        assertEquals(HomeAction.CABINET, visibleHighlight(card(web = "w", expired = true), HomeIssue.Expired))
+        assertEquals(HomeAction.SUPPORT, visibleHighlight(card(support = "s", exhausted = true), HomeIssue.TrafficExhausted))
+        assertNull(visibleHighlight(card(), HomeIssue.Expired))
+        assertNull(visibleHighlight(card(web = "w"), null))
+        assertNull(visibleHighlight(card(web = "w"), HomeIssue.ServerUnreachable))
+    }
+
+    @Test fun homeStatusOrder() {
+        assertEquals(HomeStatus.DISCONNECTED, homeStatus(false, false, false, null))
+        assertEquals(HomeStatus.CONNECTED, homeStatus(true, false, false, null))
+        assertEquals(HomeStatus.CONNECTING, homeStatus(false, true, false, null))
+        assertEquals(HomeStatus.CONNECTING, homeStatus(true, true, false, null))
+        assertEquals(HomeStatus.SWITCHING, homeStatus(true, true, true, null))
+        assertEquals(HomeStatus.SWITCHING, homeStatus(true, false, true, null))
+        assertEquals(HomeStatus.FAILED, homeStatus(false, false, false, HomeIssue.ServerUnreachable))
+        // A failed delay test while running keeps the connection shown as up; the strip explains.
+        assertEquals(HomeStatus.CONNECTED, homeStatus(true, false, false, HomeIssue.ServerUnreachable))
+        assertEquals(HomeStatus.DISCONNECTED, homeStatus(false, false, false, HomeIssue.VpnPermissionDenied))
+    }
+
+    @Test fun displayedCardFallsBackWhenSelectionIsNotACard() {
+        val cards = listOf("a", "b").map { card().copy(id = it) }
+        assertEquals("b", displayedCardId(cards, "b"))
+        assertEquals("a", displayedCardId(cards, ""))
+        assertEquals("a", displayedCardId(cards, "removed"))
+        assertNull(displayedCardId(emptyList(), "a"))
+    }
+
+    @Test fun subscriptionUrlsComeFromTheSameLoad() {
+        val subs = listOf(
+            SubscriptionCache("s", SubscriptionItem(url = "https://x")),
+            SubscriptionCache("m", SubscriptionItem()),
+        )
+        val urls = subscriptionUrls(subs)
+        assertEquals(mapOf("s" to "https://x", "m" to ""), urls)
+        val groups = listOf(GroupMapItem("s", "S"), GroupMapItem("m", "M"))
+        val cards = buildHomeCards(groups, urls, 0L)
+        assertFalse(cards.first { it.id == "s" }.isManual)
+        assertTrue(cards.first { it.id == "m" }.isManual)
+        assertTrue(subscriptionUrls(emptyList()).isEmpty())
+    }
+
+    @Test fun updateFailedDateHidesUnknown() {
+        assertEquals(1234L, updateFailedDate(HomeIssue.UpdateFailed(1234L)))
+        assertNull(updateFailedDate(HomeIssue.UpdateFailed(-1L)))
+        assertNull(updateFailedDate(HomeIssue.UpdateFailed(0L)))
+    }
+
+    @Test fun whiteTextReadableOnOverlayOverEveryAccent() {
+        HOME_ACCENTS.forEach { accent ->
+            fun mix(shift: Int): Long {
+                val c = (accent shr shift) and 0xFF
+                return Math.round(c + (255 - c) * HOME_ON_ACCENT_OVERLAY.toDouble())
+            }
+            val blended = 0xFF000000 or (mix(16) shl 16) or (mix(8) shl 8) or mix(0)
+            assertTrue(contrastWithWhite(blended) >= 4.5, "accent ${accent.toString(16)}")
+        }
     }
 }

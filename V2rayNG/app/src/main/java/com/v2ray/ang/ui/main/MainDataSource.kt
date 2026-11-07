@@ -6,6 +6,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServerAffiliationInfo
 import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.dto.entities.SubscriptionItem
+import com.v2ray.ang.enums.RoutingType
 import kotlinx.coroutines.flow.Flow
 import java.io.Closeable
 
@@ -67,6 +68,9 @@ interface MainDataSource : Closeable {
     fun sendMsg2TestService(msg: TestServiceMessage, requestId: String? = null)
     fun cancelAllPing()
     fun testCurrentServerRealPing(requestId: String)
+
+    /** Routing preset the current rules equal, or null for custom rules. Reads assets: call off the main thread. */
+    fun currentRoutingPreset(): RoutingType?
 
     fun syncSubscriptions()
     fun initAssets()
