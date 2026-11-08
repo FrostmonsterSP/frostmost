@@ -1,0 +1,334 @@
+{
+  "name": "FrostMost",
+  "version": "2.0.0",
+  "date": "2026-11-08",
+  "sourceOfTruth": "V2rayNG/app/src/main/java/com/v2ray/ang/ui/main/HomeModels.kt and V2rayNG/app/src/main/java/com/v2ray/ang/ui/compose/Theme.kt. Where this file and the code disagree, the code wins.",
+  "contrastMethod": "WCAG 2.1 relative luminance, sRGB threshold 0.03928, all ratios rounded DOWN to two decimals. Every value in this file is produced by proof/contrast.py; see proof/palette-contrast.txt for the full run.",
+  "brand": {
+    "note": "One pair only. The brand blue IS subscription accent 0; there is no separate brand colour and no gradient in any version. `primary` (#0B57D0 light / #AAC7FF dark) is a different role meaning 'the main action on this screen' and is deliberately not the brand.",
+    "mark": {
+      "light": "#3D57B2",
+      "dark": "#3550B8",
+      "source": "HOME_ACCENTS[0] / HOME_ACCENTS_DARK[0]"
+    },
+    "onAccent": {
+      "light": "#FFFFFF",
+      "dark": "#FFFFFF",
+      "source": "ACCENT_ON_PAGE"
+    },
+    "mono": {
+      "ink": "#1C1B1F",
+      "allowedOn": "#FFFFFF",
+      "note": "Only on a light neutral background. Forced monochrome icons and Android 13+ themed icons get a single flat fill; never a gradient.",
+      "source": "onSurface (light)"
+    },
+    "gradient": null
+  },
+  "subscriptionAccents": {
+    "note": "Index is the subscription's POSITION in the group list (accentFor(position)), not the group id and not a hash of it. More subscriptions than colours wrap around with Math.floorMod.",
+    "order": [
+      "indigo",
+      "violet",
+      "teal",
+      "green",
+      "rose",
+      "amber"
+    ],
+    "accents": [
+      {
+        "index": 0,
+        "key": "indigo",
+        "name": "indigo (brand)",
+        "light": "#3D57B2",
+        "dark": "#3550B8",
+        "icon": "frostmost-subscription-indigo.svg",
+        "whiteOnLight": "6.55:1",
+        "whiteOnDark": "7.02:1"
+      },
+      {
+        "index": 1,
+        "key": "violet",
+        "name": "violet",
+        "light": "#734B9D",
+        "dark": "#6B4299",
+        "icon": "frostmost-subscription-violet.svg",
+        "whiteOnLight": "6.51:1",
+        "whiteOnDark": "7.33:1"
+      },
+      {
+        "index": 2,
+        "key": "teal",
+        "name": "teal",
+        "light": "#1F676F",
+        "dark": "#14606A",
+        "icon": "frostmost-subscription-teal.svg",
+        "whiteOnLight": "6.50:1",
+        "whiteOnDark": "7.21:1"
+      },
+      {
+        "index": 3,
+        "key": "green",
+        "name": "green",
+        "light": "#2C6944",
+        "dark": "#25603B",
+        "icon": "frostmost-subscription-green.svg",
+        "whiteOnLight": "6.53:1",
+        "whiteOnDark": "7.46:1"
+      },
+      {
+        "index": 4,
+        "key": "rose",
+        "name": "rose",
+        "light": "#93435E",
+        "dark": "#8C3A55",
+        "icon": "frostmost-subscription-rose.svg",
+        "whiteOnLight": "6.55:1",
+        "whiteOnDark": "7.36:1"
+      },
+      {
+        "index": 5,
+        "key": "amber",
+        "name": "amber",
+        "light": "#825228",
+        "dark": "#7A4A18",
+        "icon": "frostmost-subscription-amber.svg",
+        "whiteOnLight": "6.58:1",
+        "whiteOnDark": "7.44:1"
+      }
+    ],
+    "removedFromV1": {
+      "wine": "#8C1D40",
+      "bronze": "#7A4A00",
+      "reason": "Removed from the app deliberately: they were the heaviest tones and read as 'alarm' rather than as the identity of an ordinary subscription. v1 resurrected both from a superseded revision. Their icon files are deleted and not recreated."
+    }
+  },
+  "onAccent": {
+    "onAccent": {
+      "value": "#FFFFFF",
+      "alpha": 1.0,
+      "source": "ACCENT_ON_PAGE"
+    },
+    "onAccentMuted": {
+      "value": "#FFFFFF",
+      "alpha": 0.96,
+      "source": "ACCENT_ON_PAGE_MUTED",
+      "worstOnBare": "6.14:1",
+      "worstOnPlate": "4.93:1",
+      "note": "0.94 lands exactly on the AA text threshold and flips over one unit of rounding, so 0.96 is the step above it. The discarded 0.88 alpha measures 4.43:1 on the plate in this run, below the threshold."
+    }
+  },
+  "overlays": {
+    "onAccentOverlay": {
+      "value": "#FFFFFF",
+      "alpha": 0.1,
+      "constant": "HOME_ON_ACCENT_OVERLAY",
+      "compositesLight": {
+        "indigo": "#5068BA",
+        "violet": "#815DA7",
+        "teal": "#35767D",
+        "green": "#417857",
+        "rose": "#9E566E",
+        "amber": "#8E633E"
+      },
+      "compositesDark": {
+        "indigo": "#4962BF",
+        "violet": "#7A55A3",
+        "teal": "#2C7079",
+        "green": "#3B704F",
+        "rose": "#984E66",
+        "amber": "#875C2F"
+      }
+    },
+    "trafficTrackOnAccent": {
+      "value": "#FFFFFF",
+      "alpha": 0.3
+    },
+    "configureOutline": {
+      "value": "current content colour",
+      "alpha": 0.55,
+      "widthDp": 1.0
+    },
+    "selectedActionOutline": {
+      "value": "tile content colour",
+      "alpha": 1.0,
+      "widthDp": 2.0
+    }
+  },
+  "contrast": {
+    "method": "WCAG 2.1, sRGB 0.03928, rounded down to 2 decimals",
+    "script": "proof/contrast.py",
+    "output": "proof/palette-contrast.txt",
+    "whiteOnBareAccent": {
+      "minBothPalettes": "6.50:1",
+      "worstCase": "light teal #1F676F",
+      "lightRange": "6.50:1 - 6.58:1",
+      "darkRange": "7.02:1 - 7.46:1",
+      "threshold": "4.50 (AA text)",
+      "status": "pass"
+    },
+    "whiteOnOverlayPlate": {
+      "minBothPalettes": "5.17:1",
+      "worstCase": "light violet #815DA7",
+      "lightRange": "5.17:1 - 5.24:1",
+      "darkRange": "5.55:1 - 5.82:1",
+      "threshold": "4.50 (AA text)",
+      "status": "pass"
+    },
+    "onAccentMutedBare": {
+      "minBothPalettes": "6.14:1",
+      "worstCase": "light teal"
+    },
+    "onAccentMutedPlate": {
+      "minBothPalettes": "4.93:1",
+      "worstCase": "light violet and light green"
+    },
+    "mark": {
+      "monoOnWhite": "17.12:1",
+      "lightOnWhite": "6.55:1",
+      "darkOnWhite": "7.02:1",
+      "whiteOnLight": "6.55:1",
+      "whiteOnDark": "7.02:1"
+    },
+    "v1FalseClaims": [
+      {
+        "claim": "white on all six accents >= 6.0:1",
+        "truth": "not computable from the current palette; the current minimum is 6.50:1, and the 5.995:1 it should have been was measured on the removed teal #0C6E75"
+      },
+      {
+        "claim": "minimum 4.85:1 on the 10% white plate",
+        "truth": "the current minimum is 5.17:1; the quoted 4.8429:1 is not reproducible from the current code under any compositing model"
+      }
+    ]
+  },
+  "semantic": {
+    "note": "Status never sits directly on a subscription accent: it travels in a chip that carries its own background and its own foreground, and colour is never the only channel. See Theme.kt LocalStatusColors.",
+    "light": {
+      "success": {
+        "chip": "#E6F4EA",
+        "onChip": "#17663C",
+        "onNeutral": "#17663C",
+        "onChipRatio": "6.15:1",
+        "onNeutralRatio": "6.99:1"
+      },
+      "warning": {
+        "chip": "#FDF0D9",
+        "onChip": "#7A4A00",
+        "onNeutral": "#7A4A00",
+        "onChipRatio": "6.64:1",
+        "onNeutralRatio": "7.48:1"
+      },
+      "danger": {
+        "chip": "#FCE8E6",
+        "onChip": "#9B1C1C",
+        "onNeutral": "#9B1C1C",
+        "onChipRatio": "6.91:1",
+        "onNeutralRatio": "8.15:1"
+      },
+      "info": {
+        "chip": "#E5F0FC",
+        "onChip": "#15497F",
+        "onNeutral": "#15497F",
+        "onChipRatio": "7.94:1",
+        "onNeutralRatio": "9.16:1"
+      }
+    },
+    "dark": {
+      "success": {
+        "chip": "#B4F0CC",
+        "onChip": "#12110F",
+        "onNeutral": "#7EE0A6",
+        "onChipRatio": "14.62:1",
+        "onNeutralRatio": "10.68:1"
+      },
+      "warning": {
+        "chip": "#F7DFA8",
+        "onChip": "#12110F",
+        "onNeutral": "#F5C97A",
+        "onChipRatio": "14.44:1",
+        "onNeutralRatio": "11.02:1"
+      },
+      "danger": {
+        "chip": "#F9C9C4",
+        "onChip": "#12110F",
+        "onNeutral": "#FFB3AC",
+        "onChipRatio": "12.74:1",
+        "onNeutralRatio": "10.02:1"
+      },
+      "info": {
+        "chip": "#BEDAF7",
+        "onChip": "#12110F",
+        "onNeutral": "#9CC4F5",
+        "onChipRatio": "13.08:1",
+        "onNeutralRatio": "9.48:1"
+      }
+    },
+    "chipEdgeVsAccents": {
+      "threshold": "3:1",
+      "worstLight": "5.52:1",
+      "worstDark": "4.74:1",
+      "status": "pass"
+    }
+  },
+  "neutrals": {
+    "light": {
+      "background": "#FCF8FA",
+      "surface": "#FFFFFF",
+      "onBackground": "#1C1B1F",
+      "onSurface": "#1C1B1F",
+      "surfaceVariant": "#F0ECEF",
+      "onSurfaceVariant": "#44474E",
+      "outline": "#6C6F78",
+      "outlineVariant": "#C4C6CF",
+      "surfaceContainerLowest": "#FFFFFF",
+      "surfaceContainerLow": "#F9F5F8",
+      "surfaceContainer": "#F4F0F3",
+      "surfaceContainerHigh": "#EEEBED",
+      "surfaceContainerHighest": "#E8E5E8",
+      "divider": "#E0E0E0",
+      "onSurfaceRatio": "17.12:1",
+      "onSurfaceVariantRatio": "9.30:1",
+      "outlineRatio": "5.02:1",
+      "outlineVariantRatio": "1.70:1 (decorative)"
+    },
+    "dark": {
+      "background": "#141317",
+      "surface": "#1C1B1F",
+      "onBackground": "#E5E1E6",
+      "onSurface": "#E5E1E6",
+      "surfaceVariant": "#2A2A30",
+      "onSurfaceVariant": "#C7C5CE",
+      "outline": "#8E909A",
+      "outlineVariant": "#44464F",
+      "surfaceContainerLowest": "#0F0E12",
+      "surfaceContainerLow": "#19181C",
+      "surfaceContainer": "#1E1D21",
+      "surfaceContainerHigh": "#282729",
+      "surfaceContainerHighest": "#333234",
+      "divider": "#424242",
+      "onSurfaceRatio": "13.25:1",
+      "onSurfaceVariantRatio": "10.03:1",
+      "outlineRatio": "5.38:1",
+      "outlineVariantRatio": "1.82:1 (decorative)"
+    }
+  },
+  "primaryRole": {
+    "note": "NOT the brand. `primary` means 'the main action on this screen'. It has no light/dark mark pair, so it cannot serve as a mark: the dark value #AAC7FF gives 1.70:1 on white.",
+    "light": "#0B57D0",
+    "dark": "#AAC7FF",
+    "lightOnSurface": "6.38:1",
+    "darkOnWhite": "1.70:1 (unusable as a mark on paper)"
+  },
+  "typography": {
+    "family": "Manrope",
+    "license": "OFL",
+    "cyrillicVerified": true,
+    "scale": "8 steps, MaterialTheme.typography (FrostTypography.kt); never set ad hoc font sizes",
+    "wordmark": {
+      "family": "Inter",
+      "weight": 600,
+      "tracking": "-0.02em",
+      "spelling": "FrostMost",
+      "outlinesOnly": "The locup wordmark ships as <path> curves; a <text> attribute is forbidden."
+    }
+  }
+}

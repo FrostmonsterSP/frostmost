@@ -1,0 +1,6 @@
+mark pixels            : 12763
+max radius (px)        : 123.14   at pixel (132, 306)
+max radius (units)     : 30.784
+limit (r=33, -2 margin): 31.000 units
+achieved margin        : 2.216 units to the r=33 circle edge
+verdict                : PASS

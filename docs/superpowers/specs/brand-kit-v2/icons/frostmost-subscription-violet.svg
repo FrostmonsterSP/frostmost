@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100">
+<!-- FrostMost subscription icon: violet (subscription accent #1).
+     Canvas 100x100, rendered at 512. Rounded rect rx=23 in the LIGHT-theme accent #734B9D
+     (HOME_ACCENTS[1], source of truth: HomeModels.kt), mark in #FFFFFF.
+     Contrast: white on #734B9D = 6.51:1 (computed by proof/contrast.py).
+     No gradient in any version (contract 0.1).
+
+     The mark geometry below is the FINAL v2 symbol (frostmost-symbol.svg), identical in every tile.
+     It lives ONLY inside <g id="mark">; nothing else here draws the mark. -->
+
+  <rect id="plate" x="0" y="0" width="100" height="100" rx="23" fill="#734B9D"/>
+
+  <g id="mark-placement" transform="translate(14 14) scale(0.72)">
+  <!-- MARK START: final v2 symbol geometry, identical across all six tiles. -->
+  <g id="mark" fill="#FFFFFF">
+    <path d="M 50 14 L 64 30 L 86 44 L 14 44 L 36 30 Z"/>
+    <path d="M 14 86 A 36 26 0 0 1 86 86 L 72 86 A 22 14 0 0 0 28 86 Z"/>
+  </g>
+  <!-- MARK END -->
+  </g>
+</svg>

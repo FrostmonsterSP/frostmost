@@ -1,0 +1,220 @@
+FrostMost brand kit v2 - contrast proof
+========================================================================
+WCAG 2.1 relative luminance, sRGB threshold 0.03928, all ratios rounded DOWN to 2 dp.
+Source of every colour: V2rayNG/app/src/main/java/com/v2ray/ang/ui/main/HomeModels.kt
+and .../ui/compose/Theme.kt. Nothing here is quoted from a document.
+
+1. White #FFFFFF on the bare accent (light palette HOME_ACCENTS)
+----------------------------------------------------------------
+  indigo #3D57B2                                               6.55:1  (raw    6.5531)  PASS >= 4.50  
+  violet #734B9D                                               6.51:1  (raw    6.5172)  PASS >= 4.50  
+  teal #1F676F                                                 6.50:1  (raw    6.5058)  PASS >= 4.50  
+  green #2C6944                                                6.53:1  (raw    6.5396)  PASS >= 4.50  
+  rose #93435E                                                 6.55:1  (raw    6.5521)  PASS >= 4.50  
+  amber #825228                                                6.58:1  (raw    6.5898)  PASS >= 4.50  
+
+2. White #FFFFFF on the bare accent (dark palette HOME_ACCENTS_DARK)
+--------------------------------------------------------------------
+  indigo #3550B8                                               7.02:1  (raw    7.0211)  PASS >= 4.50  
+  violet #6B4299                                               7.33:1  (raw    7.3313)  PASS >= 4.50  
+  teal #14606A                                                 7.21:1  (raw    7.2140)  PASS >= 4.50  
+  green #25603B                                                7.46:1  (raw    7.4601)  PASS >= 4.50  
+  rose #8C3A55                                                 7.36:1  (raw    7.3646)  PASS >= 4.50  
+  amber #7A4A18                                                7.44:1  (raw    7.4462)  PASS >= 4.50  
+
+3. White on the 10% white-over-accent plate (HOME_ON_ACCENT_OVERLAY = 0.10)
+---------------------------------------------------------------------------
+  composited plate = #FFFFFF at alpha 0.10 over the accent, then white against it
+  light indigo plate #5068BA                                   5.21:1  (raw    5.2106)  PASS >= 4.50  
+  dark  indigo plate #4962BF                                   5.55:1  (raw    5.5516)  PASS >= 4.50  
+  light violet plate #815DA7                                   5.17:1  (raw    5.1760)  PASS >= 4.50  
+  dark  violet plate #7A55A3                                   5.74:1  (raw    5.7443)  PASS >= 4.50  
+  light teal plate #35767D                                     5.19:1  (raw    5.1995)  PASS >= 4.50  
+  dark  teal plate #2C7079                                     5.67:1  (raw    5.6744)  PASS >= 4.50  
+  light green plate #417857                                    5.18:1  (raw    5.1865)  PASS >= 4.50  
+  dark  green plate #3B704F                                    5.80:1  (raw    5.8067)  PASS >= 4.50  
+  light rose plate #9E566E                                     5.23:1  (raw    5.2368)  PASS >= 4.50  
+  dark  rose plate #984E66                                     5.80:1  (raw    5.8064)  PASS >= 4.50  
+  light amber plate #8E633E                                    5.24:1  (raw    5.2442)  PASS >= 4.50  
+  dark  amber plate #875C2F                                    5.82:1  (raw    5.8300)  PASS >= 4.50  
+
+4. Published minima (these are the numbers COLOR-MAP.md quotes)
+---------------------------------------------------------------
+  white on bare accent, worst of 12 : 6.50:1  (teal)
+  white on 10% plate, worst light  : 5.17:1  (violet #815DA7)
+  white on 10% plate, worst dark   : 5.55:1  (indigo #4962BF)
+  white on 10% plate, worst of 12  : 5.17:1  (violet)
+  -> contract 4 wording: bare accent "not below 6.50:1", plate "not below 5.17:1"
+  -> v1 claimed "all six >= 6.0:1" and ">= 4.85:1 on the plate"; both were false.
+     true figures are 6.50:1 and 5.17:1, and both still clear the 4.5:1 threshold.
+
+5. Mark colours
+---------------
+  brandMark.mono #1C1B1F on #FFFFFF                           17.12:1  (raw   17.1298)  PASS >= 4.50  
+  #3D57B2 on #FFFFFF (light mark on paper)                     6.55:1  (raw    6.5531)  PASS >= 4.50  
+  #3550B8 on #FFFFFF (dark mark on paper)                      7.02:1  (raw    7.0211)  PASS >= 4.50  
+
+6. White mark on each subscription colour (icon tiles)
+------------------------------------------------------
+  light indigo #3D57B2                                         6.55:1  (raw    6.5531)  PASS >= 4.50  
+  light violet #734B9D                                         6.51:1  (raw    6.5172)  PASS >= 4.50  
+  light teal #1F676F                                           6.50:1  (raw    6.5058)  PASS >= 4.50  
+  light green #2C6944                                          6.53:1  (raw    6.5396)  PASS >= 4.50  
+  light rose #93435E                                           6.55:1  (raw    6.5521)  PASS >= 4.50  
+  light amber #825228                                          6.58:1  (raw    6.5898)  PASS >= 4.50  
+  dark  indigo #3550B8                                         7.02:1  (raw    7.0211)  PASS >= 4.50  
+  dark  violet #6B4299                                         7.33:1  (raw    7.3313)  PASS >= 4.50  
+  dark  teal #14606A                                           7.21:1  (raw    7.2140)  PASS >= 4.50  
+  dark  green #25603B                                          7.46:1  (raw    7.4601)  PASS >= 4.50  
+  dark  rose #8C3A55                                           7.36:1  (raw    7.3646)  PASS >= 4.50  
+  dark  amber #7A4A18                                          7.44:1  (raw    7.4462)  PASS >= 4.50  
+
+7. Brand blue vs the primary role (separate roles, contract 0)
+--------------------------------------------------------------
+  #3D57B2 vs primary #0B57D0 (light)  - indistinguishability, no threshold   1.02:1  (raw    1.0261)  PASS >= 1.00    (informative: 1.00 = same colour)
+  #3550B8 vs primary #0B57D0 (light)  - informative            1.09:1  (raw    1.0994)  PASS >= 1.00  
+  primary dark #AAC7FF on #FFFFFF     - fails as a paper mark   1.70:1  (raw    1.7042)  FAIL >= 4.50  
+  primary light #0B57D0 on surface #FFFFFF                     6.38:1  (raw    6.3862)  PASS >= 4.50  
+
+8. on-accent-muted: #FFFFFF @ 0.96 on the bare accent and on the plate
+----------------------------------------------------------------------
+  light indigo muted on bare #3D57B2                           6.17:1  (raw    6.1748)  PASS >= 4.50  
+  light indigo muted on plate #5068BA                          4.94:1  (raw    4.9494)  PASS >= 4.50  
+  dark indigo muted on bare #3550B8                            6.61:1  (raw    6.6157)  PASS >= 4.50  
+  dark indigo muted on plate #4962BF                           5.27:1  (raw    5.2733)  PASS >= 4.50  
+  light violet muted on bare #734B9D                           6.15:1  (raw    6.1596)  PASS >= 4.50  
+  light violet muted on plate #815DA7                          4.93:1  (raw    4.9315)  PASS >= 4.50  
+  dark violet muted on bare #6B4299                            6.88:1  (raw    6.8863)  PASS >= 4.50  
+  dark violet muted on plate #7A55A3                           5.43:1  (raw    5.4393)  PASS >= 4.50  
+  light teal   muted on bare #1F676F                           6.14:1  (raw    6.1454)  PASS >= 4.50  
+  light teal   muted on plate #35767D                          4.95:1  (raw    4.9542)  PASS >= 4.50  
+  dark teal   muted on bare #14606A                            6.81:1  (raw    6.8144)  PASS >= 4.50  
+  dark teal   muted on plate #2C7079                           5.37:1  (raw    5.3732)  PASS >= 4.50  
+  light green  muted on bare #2C6944                           6.18:1  (raw    6.1848)  PASS >= 4.50  
+  light green  muted on plate #417857                          4.93:1  (raw    4.9357)  PASS >= 4.50  
+  dark green  muted on bare #25603B                            7.03:1  (raw    7.0381)  PASS >= 4.50  
+  dark green  muted on plate #3B704F                           5.49:1  (raw    5.4916)  PASS >= 4.50  
+  light rose   muted on bare #93435E                           6.16:1  (raw    6.1696)  PASS >= 4.50  
+  light rose   muted on plate #9E566E                          4.96:1  (raw    4.9617)  PASS >= 4.50  
+  dark rose   muted on bare #8C3A55                            6.91:1  (raw    6.9173)  PASS >= 4.50  
+  dark rose   muted on plate #984E66                           5.50:1  (raw    5.5013)  PASS >= 4.50  
+  light amber  muted on bare #825228                           6.22:1  (raw    6.2203)  PASS >= 4.50  
+  light amber  muted on plate #8E633E                          4.98:1  (raw    4.9840)  PASS >= 4.50  
+  dark amber  muted on bare #7A4A18                            7.02:1  (raw    7.0287)  PASS >= 4.50  
+  dark amber  muted on plate #875C2F                           5.50:1  (raw    5.5065)  PASS >= 4.50  
+  worst muted on bare   : 6.14:1 (light teal)
+  worst muted on plate  : 4.93:1 (light violet)
+  HomeModels.kt comment claims 6.15:1 on the bare accent and 4.93:1 on the plate;
+  this run agrees: 6.14:1 and 4.93:1.
+
+9. Status roles on their own chip (both themes) - text threshold 4.5
+--------------------------------------------------------------------
+  light success #17663C on chip #E6F4EA                        6.15:1  (raw    6.1597)  PASS >= 4.50  
+  light warning #7A4A00 on chip #FDF0D9                        6.64:1  (raw    6.6414)  PASS >= 4.50  
+  light danger  #9B1C1C on chip #FCE8E6                        6.91:1  (raw    6.9178)  PASS >= 4.50  
+  light info    #15497F on chip #E5F0FC                        7.94:1  (raw    7.9434)  PASS >= 4.50  
+  dark success #12110F on chip #B4F0CC                        14.62:1  (raw   14.6268)  PASS >= 4.50  
+  dark warning #12110F on chip #F7DFA8                        14.44:1  (raw   14.4459)  PASS >= 4.50  
+  dark danger  #12110F on chip #F9C9C4                        12.74:1  (raw   12.7424)  PASS >= 4.50  
+  dark info    #12110F on chip #BEDAF7                        13.08:1  (raw   13.0851)  PASS >= 4.50  
+
+10. Scheme roles on their own surface - every ratio Theme.kt and COLOR-MAP.md quote
+-----------------------------------------------------------------------------------
+  light onSurface #1C1B1F                      on surface #FFFFFF  17.12:1  (raw   17.1298)  PASS >= 4.50  
+  light onSurfaceVariant #44474E               on surface #FFFFFF   9.30:1  (raw    9.3040)  PASS >= 4.50  
+  light outline #6C6F78                        on surface #FFFFFF   5.02:1  (raw    5.0208)  PASS >= 4.50  
+  light outlineVariant #C4C6CF (decorative)    on surface #FFFFFF    1.70:1  (decorative, no threshold)
+  light onBackground #1C1B1F                   on surface #FFFFFF  17.12:1  (raw   17.1298)  PASS >= 4.50  
+  dark onSurface #E5E1E6                      on surface #1C1B1F  13.25:1  (raw   13.2506)  PASS >= 4.50  
+  dark onSurfaceVariant #C7C5CE               on surface #1C1B1F  10.03:1  (raw   10.0382)  PASS >= 4.50  
+  dark outline #8E909A                        on surface #1C1B1F   5.38:1  (raw    5.3886)  PASS >= 4.50  
+  dark outlineVariant #44464F (decorative)    on surface #1C1B1F    1.82:1  (decorative, no threshold)
+  dark onBackground #E5E1E6                   on surface #1C1B1F  13.25:1  (raw   13.2506)  PASS >= 4.50  
+  onBackground #1C1B1F on background #FCF8FA                  16.27:1  (raw   16.2704)  PASS >= 4.50  
+  onBackground #E5E1E6 on background #141317                  14.30:1  (raw   14.3088)  PASS >= 4.50  
+
+  on-accent-muted at the rejected 0.88 alpha, on the plate (why 0.96 was chosen):
+    worst 0.88 on plate: 4.43:1  (below 4.5, so 0.88 is not usable here)
+
+11. Status tones on a neutral surface (both themes) - text threshold 4.5
+------------------------------------------------------------------------
+  light success #17663C on surface #FFFFFF                     6.99:1  (raw    6.9948)  PASS >= 4.50  
+  light warning #7A4A00 on surface #FFFFFF                     7.48:1  (raw    7.4812)  PASS >= 4.50  
+  light danger  #9B1C1C on surface #FFFFFF                     8.15:1  (raw    8.1503)  PASS >= 4.50  
+  light info    #15497F on surface #FFFFFF                     9.16:1  (raw    9.1648)  PASS >= 4.50  
+  dark success #7EE0A6 on surface #1C1B1F                     10.68:1  (raw   10.6857)  PASS >= 4.50  
+  dark warning #F5C97A on surface #1C1B1F                     11.02:1  (raw   11.0268)  PASS >= 4.50  
+  dark danger  #FFB3AC on surface #1C1B1F                     10.02:1  (raw   10.0297)  PASS >= 4.50  
+  dark info    #9CC4F5 on surface #1C1B1F                      9.48:1  (raw    9.4851)  PASS >= 4.50  
+  light success #17663C on background #FCF8FA                  6.64:1  (raw    6.6439)  PASS >= 4.50  
+  light warning #7A4A00 on background #FCF8FA                  7.10:1  (raw    7.1059)  PASS >= 4.50  
+  light danger  #9B1C1C on background #FCF8FA                  7.74:1  (raw    7.7414)  PASS >= 4.50  
+  light info    #15497F on background #FCF8FA                  8.70:1  (raw    8.7051)  PASS >= 4.50  
+  dark success #7EE0A6 on background #141317                  11.53:1  (raw   11.5392)  PASS >= 4.50  
+  dark warning #F5C97A on background #141317                  11.90:1  (raw   11.9075)  PASS >= 4.50  
+  dark danger  #FFB3AC on background #141317                  10.83:1  (raw   10.8307)  PASS >= 4.50  
+  dark info    #9CC4F5 on background #141317                  10.24:1  (raw   10.2426)  PASS >= 4.50  
+
+12. Superseded literal tones quoted by 2026-11-08-fork-ui-design-map.md 1.2
+---------------------------------------------------------------------------
+  "Ok" #0A7455 on light neutral #FFFFFF                        5.76:1  (raw    5.7657)  PASS >= 4.50  
+  "Ok" #0A7455 on dark surface #1C1B1F                         2.97:1  (raw    2.9710)  FAIL >= 4.50  
+  "Busy" #8F4C08 on light neutral #FFFFFF                      6.55:1  (raw    6.5518)  PASS >= 4.50  
+  "Busy" #8F4C08 on dark surface #1C1B1F                       2.61:1  (raw    2.6145)  FAIL >= 4.50  
+  informative only - a light-theme accent is never painted on the dark surface, so a
+  low ratio here is expected and is NOT a defect (a needs-attention marker, not a bug):
+      light indigo #3D57B2 on dark surface #1C1B1F : 2.61:1 (by design)
+      light violet #734B9D on dark surface #1C1B1F : 2.62:1 (by design)
+      light teal   #1F676F on dark surface #1C1B1F : 2.63:1 (by design)
+      light green  #2C6944 on dark surface #1C1B1F : 2.61:1 (by design)
+      light rose   #93435E on dark surface #1C1B1F : 2.61:1 (by design)
+      light amber  #825228 on dark surface #1C1B1F : 2.59:1 (by design)
+
+13. Status chip against every accent - edge visibility, threshold 3.0
+---------------------------------------------------------------------
+  light success chip #E6F4EA vs all 6 accents: worst 5.72:1 (teal)  PASS >= 3.00
+  light warning chip #FDF0D9 vs all 6 accents: worst 5.77:1 (teal)  PASS >= 3.00
+  light danger  chip #FCE8E6 vs all 6 accents: worst 5.52:1 (teal)  PASS >= 3.00
+  light info    chip #E5F0FC vs all 6 accents: worst 5.63:1 (teal)  PASS >= 3.00
+  dark success chip #B4F0CC vs all 6 accents: worst 5.44:1 (indigo)  PASS >= 3.00
+  dark warning chip #F7DFA8 vs all 6 accents: worst 5.37:1 (indigo)  PASS >= 3.00
+  dark danger  chip #F9C9C4 vs all 6 accents: worst 4.74:1 (indigo)  PASS >= 3.00
+  dark info    chip #BEDAF7 vs all 6 accents: worst 4.86:1 (indigo)  PASS >= 3.00
+
+14. Diagnostic: the contract's quoted 5.995 / 4.8429 belong to the SUPERSEDED palette
+-------------------------------------------------------------------------------------
+  CONTRACT.md section 4 still cites 'minimum 5.995' and 'minimum 4.8429'. Neither is
+  reproducible from the current HOME_ACCENTS. The 5.995 is reproducible from the palette
+  the same document records as removed (AUDIT-v1.md section 4), whose teal was #0C6E75:
+
+  superseded palette: white on bare accent minimum  5.99:1  (#0C6E75)
+    -> 5.9951 on #0C6E75, which floors to 5.99: the figure CONTRACT.md quotes.
+  superseded palette: white on 0.10 plate minimum  4.85:1  (#8F5600)
+  current palette   : white on bare accent minimum  6.50:1  (teal)
+  current palette   : white on 0.10 plate minimum   5.17:1  (violet)
+
+  The contract's plate figure 4.8429 is NOT reproducible on this machine under any
+  compositing model tried (encoded-byte, unrounded-float, and linear-light): the
+  superseded palette's worst plate is 4.85:1 (#8F5600), the current palette's is 5.17:1 (violet).
+  Whatever produced 4.8429, it is not the current code. v2 therefore publishes only
+  the figures this script prints; both clear 4.5:1 with margin.
+
+15. Thresholds the app's own scheme fails (reported, not fixed)
+---------------------------------------------------------------
+  FAIL app "Ok" #0A7455 (superseded literal) #0A7455 on #1C1B1F = 2.97:1 (< 4.50)
+  FAIL app "Busy" #8F4C08 (superseded literal) #8F4C08 on #1C1B1F = 2.61:1 (< 4.50)
+
+  Chip-edge failures: none
+
+16. All checks
+--------------
+  105 checks reported, 102 PASS, 3 FAIL
+
+PUBLISHED NUMBERS (copy these, rounded down, into COLOR-MAP.md / frostmost-colors.json):
+  white on bare accent, worst of 12      : 6.50:1
+  white on 10% plate, worst light        : 5.17:1
+  white on 10% plate, worst dark         : 5.55:1
+  white on 10% plate, worst of 12        : 5.17:1
+  ink #1C1B1F on #FFFFFF                 : 17.12:1
+  #3D57B2 on #FFFFFF                     : 6.55:1
+  #3550B8 on #FFFFFF                     : 7.02:1

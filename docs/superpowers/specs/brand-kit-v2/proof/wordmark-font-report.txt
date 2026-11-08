@@ -1,0 +1,149 @@
+FrostMost wordmark — font and measurement report
+================================================
+Date: 2026-11-08
+Owner: wordmark-owner
+Files under test:
+  icons/frostmost-wordmark-horizontal.svg
+  icons/frostmost-wordmark-stacked.svg
+
+------------------------------------------------------------
+1. FONT AND INSTANCE
+------------------------------------------------------------
+File on disk   : /usr/share/fonts/inter/InterVariable.ttf  (variable font, upm 2048)
+Instance       : wght=600, i.e. Inter SemiBold
+Instance method: fontTools.varLib.instancer.instantiateVariableFont(font, {"wght": 600})
+Tracking       : -0.02em applied per glyph advance (TRACKING_EM = -0.02)
+Cap height     : 0.7275 em (OS/2 sCapHeight 1490 / 2048) — used for all vertical maths
+x-height       : 0.5459 em (OS/2 sxHeight 1118 / 2048)
+
+Inter.ttc was NOT used. The variable TTF was instanced at 600 so the weight is exact
+rather than a named instance resolved by the rasteriser, which keeps the outline data
+identical on every machine.
+
+------------------------------------------------------------
+2. HOW THE CURVES WERE PRODUCED (method, and why)
+------------------------------------------------------------
+Method: direct glyph outline extraction — NOT raster tracing.
+
+  fontTools TTFont -> instantiateVariableFont(wght=600) -> glyphSet().draw(TransformPen(SVGPathPen))
+  Each glyph is drawn through a TransformPen with matrix (1/upm, 0, 0, 1/upm, pen_x, 0),
+  so the emitted commands are already in em units with the pen advance baked in.
+
+Why this and not magick + potrace: potrace 1.16 is installed and was considered, but
+it reconstructs quadratics from a raster and inevitably softens the flat-sided counters
+and the crisp stems of a grotesque. Extracting the font's own cubic Bezier outlines is
+exact, resolution-independent, and reproduces the typeface bit-for-bit instead of
+approximating it. No interpolation or smoothing step exists to melt the shapes.
+
+Rendering was used only to VERIFY, never to produce, the geometry: the traced paths were
+rasterised with rsvg-convert and measured back (section 3). Rendered ink matched the
+predicted bbox to within anti-aliasing tolerance, and the letters read as genuine
+Inter SemiBold (see proof/wordmark-horizontal-name24-x4.png).
+
+The nine glyph paths are outlines only; no glyph is a bitmap, and every path is closed
+contour data in the source font's own cubic format.
+
+------------------------------------------------------------
+3. MEASURED NUMBERS  (measured from rendered pixels, not read off the source)
+------------------------------------------------------------
+All figures below come from scanning proof/wordmark-horizontal-native.png and
+proof/wordmark-stacked-native.png (rendered at ~1 px per canvas unit) for non-white
+pixels, splitting the ink into the mark cluster and the name cluster at the empty
+gutter, and taking bounding boxes. Canvas units.
+
+HORIZONTAL  (viewBox 0 0 309.843 98, width/height 309.843 x 98)
+  font size of the name            : 44 units  (cap height 32.012 units)
+  mark ink bbox                    : x 28.0 .. 70.0   y 28.0 .. 70.0   (42 x 42)
+  name ink bbox (traced path)      : x 91.95 .. 297.85  y 32.98 .. 65.97
+  name ink width                   : 205.90 units
+  name cap-height band             : 32.98 units
+
+  >>> RIGHT MARGIN (name ink right -> viewBox right edge)
+        = 309.843 - 297.85 = 11.99 units      [contract requires >= 8]   PASS
+  >>> GAP between mark ink and name ink
+        = 91.95 - 70.0 = 21.99 units          [contract requires >= 8]   PASS
+  >>> Optical centring: mark ink centre y = 48.98, name cap band centre y = 49.47,
+        delta = 0.50 units                    (visually centred)         PASS
+
+  The v1 defect is gone. v1 had no measured right margin at all with a wider fallback
+  font; here the margin is a computed 12 units because the name is placed by its
+  measured ink box (name_x = 92 - bbox_left * font_size), not by text-anchor.
+
+STACKED  (viewBox 0 0 247.2 131.294, width/height 247.2 x 131.294)
+  font size of the name            : 46 units  (cap height 33.466 units)
+  mark ink bbox                    : x 101.08 .. 146.12  y 25.02 .. 70.06
+  name ink bbox (traced path)      : x 16.01 .. 231.19   y 79.06 .. 114.09
+  name ink width                   : 215.18 units
+  name cap-height band             : 35.03 units
+
+  >>> VERTICAL GAP (mark ink bottom -> name cap top)
+        = 79.06 - 70.06 = 9.01 units          [contract requires 8-12]   PASS
+  >>> Horizontal centring of the name
+        name ink centre x = 123.60, canvas axis x = 123.60, offset = 0.00 units   PASS
+        (mark ink centre x = 123.60 — both on the same axis)
+  >>> Name left / right margins     : 16.01 / 16.01 units (symmetrical)         PASS
+
+  The v1 defect is gone. v1 left ~57 units of dead space between mark and name on a
+  100-unit canvas; this version measures 9.01 units. The gap is anchored to the mark's
+  INK bottom, not to its 100-unit box, because the contract's mark carries padding
+  (ink occupies 14..86 of the box). Anchoring to the box produced 18 units — that was
+  found by measurement and fixed before delivery.
+
+------------------------------------------------------------
+4. COLOUR
+------------------------------------------------------------
+Mark : #3D57B2  (brandMark.light, contract section 0.1)
+Name : #1C1B1F  (brandMark.mono, contract section 0.1)
+No gradient, no filter, no opacity. Each file contains exactly these two hex values and
+nothing else. Each SVG holds the symbol in one <g id="mark"> and the name in one
+<g id="wordmark">.
+
+------------------------------------------------------------
+5. HARD ACCEPTANCE CRITERION — NO <text> ELEMENT
+------------------------------------------------------------
+Command:
+  grep -c '<text' icons/frostmost-wordmark-horizontal.svg icons/frostmost-wordmark-stacked.svg
+
+Result: 0 matches in both files.
+
+Also verified absent in both files, via
+  grep -cE '<image|data:image|base64|font-family|fonts.googleapis|@font-face|<tspan|filter=|gradient'
+Result: 0 matches.
+
+Element inventory of each file (counted):
+  1 x <svg>, 3 x <g>, 11 x <path>   (2 mark paths + 9 glyph paths)
+Nothing else. No raster is embedded, so the typography is deterministic and the files are
+renderable and verifiable on any machine.
+
+------------------------------------------------------------
+6. PLACEHOLDER MARK — COORDINATION NOTE
+------------------------------------------------------------
+The <g id="mark"> block in BOTH files currently contains wordmark-owner's own
+placeholder approximation of the symbol, not mark-designer's final geometry. It obeys the
+contract's numbers (ink 14..86 on a 100-unit canvas, 2 closed forms, strokes >= 5,
+symmetric about x=50) so the surrounding spacing is already correct, but it must be
+replaced.
+
+The final geometry must be swapped INSIDE <g id="mark"> only. The transform on that group
+(translate + scale) and the name group must be left untouched, because the measured
+margins above depend on the mark's ink occupying 14..86 of its 100-unit box. If the final
+mark's ink sits elsewhere in its box, re-run the builder so the gap stays 9 units.
+
+------------------------------------------------------------
+7. PROOF RENDERS  (all in proof/)
+------------------------------------------------------------
+wordmark-horizontal-1024.png     1024 x 324   horizontal lockup, white bg
+wordmark-horizontal-320.png       320 x 102   small-size legibility
+wordmark-horizontal-h24.png        76 x  24   whole lockup 24 px tall
+wordmark-horizontal-name24.png    231 x  73   name cap height exactly 24 px
+wordmark-horizontal-name24-x4.png 924 x 292   previous, x4 nearest-neighbour, inspected
+wordmark-horizontal-native.png    310 x  99   1 px per canvas unit — source of measurements
+wordmark-stacked-512.png          512 x 272   stacked lockup
+wordmark-stacked-native.png       247 x 132   1 px per canvas unit — source of measurements
+
+Legibility at 24 px: at a 24 px cap height the word "FrostMost" is fully readable and the
+capital F and M are distinct; the x4 inspection image shows clean stems and open counters
+with no melting, and both syllables stay separable. Verified by eye with read_image.
+
+Renderers used: rsvg-convert (all SVG -> PNG), magick (identify, inspection, x4 upscale,
+pixel scans).

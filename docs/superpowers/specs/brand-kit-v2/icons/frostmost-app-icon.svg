@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
+<!-- FrostMost app icon (launcher / store). 1024x1024.
+     Rounded-square background, flat #3D57B2, no gradient.
+     Mark flat #FFFFFF; the v1 pale-ice gradient is deliberately gone.
+     The mark keeps the same proportion of safe margin as the adaptive
+     foreground (corner at 31/54 of the half canvas), so the two files
+     cannot drift apart. Rounded corners belong to the icon itself, not
+     to the adaptive layers. -->
+  <rect width="100" height="100" rx="22" fill="#3D57B2"/>
+  <g id="mark-placement" transform="translate(21.8103 21.8103) scale(0.563794)">
+  <!-- MARK START: single source of truth for the symbol geometry.
+         Replace the two paths inside this group to swap the mark;
+         nothing else in this file draws it. -->
+  <g id="mark" fill="#FFFFFF">
+    <path d="M 50 14 L 64 30 L 86 44 L 14 44 L 36 30 Z"/>
+    <path d="M 14 86 A 36 26 0 0 1 86 86 L 72 86 A 22 14 0 0 0 28 86 Z"/>
+  </g>
+  <!-- MARK END -->
+  </g>
+</svg>

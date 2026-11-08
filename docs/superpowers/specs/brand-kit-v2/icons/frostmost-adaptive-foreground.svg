@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 108 108">
+<!-- FrostMost adaptive icon FOREGROUND.
+     Canvas 108x108: the real Android adaptive canvas (not 100).
+     Safe circle: r=33 centred at (54,54), diameter 66 of 108.
+     Mark only: no background, no rounding, no gradient. Flat #FFFFFF.
+     Mark is RENDERED inside the safe zone. After placement the mark's farthest ink corner sits at 31.0 units from centre
+     (bbox corner, not a rendered sample), leaving 2.0 units of clearance to the r=33
+     circle. Measured proof: proof/adaptive-foreground-safe-zone.png + check-safe-zone.sh.
+     The mark paths live only in the <g id="mark"> block below. -->
+
+  <g id="mark-placement" transform="translate(23.555125 23.555125) scale(0.608898)">
+  <!-- MARK START: single source of truth for the symbol geometry.
+         Replace the two paths inside this group to swap the mark;
+         nothing else in this file draws it. -->
+  <g id="mark" fill="#FFFFFF">
+    <path d="M 50 14 L 64 30 L 86 44 L 14 44 L 36 30 Z"/>
+    <path d="M 14 86 A 36 26 0 0 1 86 86 L 72 86 A 22 14 0 0 0 28 86 Z"/>
+  </g>
+  <!-- MARK END -->
+  </g>
+</svg>
