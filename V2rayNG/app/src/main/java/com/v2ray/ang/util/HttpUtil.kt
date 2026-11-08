@@ -157,7 +157,9 @@ object HttpUtil {
             if (currentUrl == null) continue
             val client = buildOkHttpClient(request.timeout, request.httpPort, request.proxyUsername, request.proxyPassword, followRedirects = false)
             val finalUserAgent = if (request.userAgent.isNullOrBlank()) {
-                "v2rayNG/${BuildConfig.VERSION_NAME}"
+                // Identifies this app to servers that asked. It names the fork, not upstream: a
+                // FrostMost request must not report itself as v2rayNG.
+                "${BuildConfig.FORK_APPLICATION_ID}/${BuildConfig.VERSION_NAME}"
             } else {
                 request.userAgent
             }

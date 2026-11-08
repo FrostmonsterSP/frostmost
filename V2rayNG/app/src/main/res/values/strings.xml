@@ -16,6 +16,13 @@
     <string name="notification_channel_service">v2rayNG service</string>
     <string name="notification_channel_subscription_updates">Subscription updates</string>
     <string name="notification_channel_connection_checks">Connection checks</string>
+    <string name="notification_channel_subscription_alerts">Subscription alerts</string>
+    <string name="notification_subscription_alert_title">Subscription</string>
+    <string name="notification_subscription_traffic_alert">%1$s: %2$s of traffic left</string>
+    <string name="notification_subscription_traffic_depleted">%1$s: traffic used up</string>
+    <string name="notification_subscription_expiry_soon">%1$s: expires on %2$s</string>
+    <string name="notification_subscription_expired">%1$s: expired on %2$s</string>
+    <string name="notification_subscription_alert_no_remain">no traffic left</string>
     <string name="notification_action_stop_v2ray">Stop</string>
     <string name="toast_permission_denied">Permission denied</string>
     <string name="toast_permission_denied_notification">Notification permission denied</string>
@@ -190,6 +197,10 @@
     <string name="summary_pref_auto_remove_invalid_after_test">Test results may not be accurate; deleted config cannot be recovered.</string>
     <string name="title_pref_auto_sort_after_test">Auto sort after testing</string>
     <string name="summary_pref_auto_sort_after_test">Test results may not be accurate;</string>
+    <string name="title_pref_subscription_traffic_notification">Traffic running out</string>
+    <string name="summary_pref_subscription_traffic_notification">Notify when a subscription uses 90% of its traffic or runs out.</string>
+    <string name="title_pref_subscription_expiry_notification">Subscription expiry</string>
+    <string name="summary_pref_subscription_expiry_notification">Notify when a subscription expires in 3 days or has already expired.</string>
 
     <string name="title_mux_settings">Mux Settings</string>
     <string name="title_pref_mux_enabled">Enable Mux</string>
@@ -291,7 +302,7 @@
     <string name="title_source_code">Source code</string>
     <string name="title_oss_license">Open-source licenses</string>
     <string name="title_translators">Translators</string>
-    <string name="title_tg_channel">Telegram channel</string>
+    <string name="about_fork_notice">FrostMost is a graphical-only fork of v2rayNG. The network engine and protocol code are unchanged upstream code.</string>
 
     <string name="title_pref_promotion">Promotion</string>
 

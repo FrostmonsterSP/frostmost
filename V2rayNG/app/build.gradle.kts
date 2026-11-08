@@ -14,7 +14,7 @@ android {
         minSdk = 24
         targetSdk = 37
         versionCode = 755
-        versionName = "2.3.15"
+        versionName = "0.9.0rc"
 
         buildConfigField("String", "FORK_APPLICATION_ID", "\"${property("fork.applicationId")}\"")
         buildConfigField("String", "LINK_SCHEME", "\"${property("fork.linkScheme")}\"")

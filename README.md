@@ -1,90 +1,196 @@
-# v2rayNG
+# FrostMost
 
-A V2Ray client for Android, support [Xray core](https://github.com/XTLS/Xray-core) and [v2fly core](https://github.com/v2fly/v2ray-core)
+**FrostMost is a graphical-only fork of [v2rayNG](https://github.com/2dust/v2rayNG).**
+Only the user interface, typography, icons and branding differ. The V2Ray/Xray core, the networking
+engine, the protocol and routing code, subscription handling, and the import/export formats are
+untouched upstream code.
 
-[![API](https://img.shields.io/badge/API-24%2B-yellow.svg?style=flat)](https://developer.android.com/about/versions/lollipop)
-[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.4.0-blue.svg)](https://kotlinlang.org)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/2dust/v2rayNG)](https://github.com/2dust/v2rayNG/commits/master)
-[![CodeFactor](https://www.codefactor.io/repository/github/2dust/v2rayng/badge)](https://www.codefactor.io/repository/github/2dust/v2rayng)
-[![GitHub Releases](https://img.shields.io/github/downloads/2dust/v2rayNG/latest/total?logo=github)](https://github.com/2dust/v2rayNG/releases)
-[![Chat on Telegram](https://img.shields.io/badge/Chat%20on-Telegram-brightgreen.svg)](https://t.me/v2rayn)
-
----
-
-## Download / 下载
-
-Download the latest release here:
-
-在这里下载最新版本：
-
-[https://github.com/2dust/v2rayNG/releases](https://github.com/2dust/v2rayNG/releases)
-
-> [!TIP]
-> v2rayNG is the mobile version. For the desktop version, please visit the v2rayN \
-> v2rayNG 是手机版，电脑版请访问 v2rayN
->
-> https://github.com/2dust/v2rayN
+**FrostMost — исключительно графический форк [v2rayNG](https://github.com/2dust/v2rayNG).**
+Отличаются только интерфейс, типографика, иконки и брендинг. Ядро V2Ray/Xray, сетевой движок,
+протоколы и маршрутизация, работа с подписками и форматы импорта/экспорта — неизменённый
+апстримный код.
 
 ---
 
-### Geoip and Geosite
+## What this fork changes / Чем этот форк отличается
 
-- geoip.dat and geosite.dat files are in `Android/data/com.v2ray.ang/files/assets` (path may differ on some Android device)
-- download feature will get enhanced version in this [repo](https://github.com/Loyalsoldier/v2ray-rules-dat) (note: it needs a working proxy)
-- latest official [domain list](https://github.com/Loyalsoldier/v2ray-rules-dat) and [ip list](https://github.com/Loyalsoldier/geoip) can be imported manually
-- possible to use a third-party dat file in the same folder, like [h2y](https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6)
+### Changed / Изменено
 
-More in our [wiki](https://github.com/2dust/v2rayNG/wiki)
+- **Interface.** The screens are rebuilt on a shared design system (`ui/compose/Frost*.kt`): surfaces
+  that always pair a background with its foreground, one typography scale, closed spacing, radius and
+  elevation scales. Text can no longer end up invisible or black-on-black.
+- **Branding.** Own app name (`FrostMost`), own launcher icon, own notification and quick-settings
+  glyph, own brand mark in the top bar.
+- **Application identity.** A different application id, so FrostMost installs **alongside** v2rayNG
+  instead of replacing it. Deep links use its own scheme.
+- **Locales.** Only English and Russian are built in.
+- **Home screen.** Subscription cards with traffic and expiry rails, swiping between subscriptions,
+  and in-place server and routing configuration.
 
-### Geoip 与 Geosite
+### Not changed / Не изменено
 
-- geoip.dat 和 geosite.dat 文件位于 `Android/data/com.v2ray.ang/files/assets`（部分设备路径可能不同）
-- 下载功能将获取该 [仓库](https://github.com/Loyalsoldier/v2ray-rules-dat) 中的增强版本（注意：此功能需要一个可用的代理）
-- 最新官方 [域名列表](https://github.com/Loyalsoldier/v2ray-rules-dat) 和 [IP 列表](https://github.com/Loyalsoldier/geoip) 可手动导入
-- 也可在同一文件夹中使用第三方 dat 文件，例如 [h2y](https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6)
+- **Core.** The native library, the tunnel, the protocols and the routing engine are the upstream
+  ones. A bug in the proxy core is an upstream bug, and so is its fix.
+- **Data model.** Servers, groups, subscriptions and routing are stored and imported/exported in the
+  upstream formats. FrostMost is not a new client with its own storage.
+- **Direction of work.** This fork follows upstream. The point of the fork is the look, not a
+  different product.
 
-更多内容请见我们的 [wiki](https://github.com/2dust/v2rayNG/wiki)
+### Please / Пожалуйста
 
----
-
-## Development guide / 开发指南
-
-### Note
-
-- Android project under the V2rayNG folder can be compiled directly in Android Studio, or using the Gradle wrapper. But the v2ray core inside the aar is (probably) outdated.
-- The aar can be compiled from the Golang project [AndroidLibV2rayLite](https://github.com/2dust/AndroidLibV2rayLite) or [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite). For a quick start, read the guides for [Go Mobile](https://github.com/golang/go/wiki/Mobile) and [Makefiles for Go Developers](https://tutorialedge.net/golang/makefiles-for-go-developers/).
-- v2rayNG can run on Android Emulators. For WSA, VPN permission needs to be granted via `appops set [package name] ACTIVATE_VPN allow`.
-
-### 提示
-
-- V2rayNG 文件夹下的 Android 项目可直接在 Android Studio 中编译，或使用 Gradle wrapper 编译。但 aar 内置的 v2ray core（可能）已过时。
-- aar 可由 Golang 项目 [AndroidLibV2rayLite](https://github.com/2dust/AndroidLibV2rayLite) 或 [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) 编译而成。快速入门可参考 [Go Mobile](https://github.com/golang/go/wiki/Mobile) 指南和 [Makefiles for Go Developers](https://tutorialedge.net/golang/makefiles-for-go-developers/)。
-- v2rayNG 可在 Android 模拟器上运行。对于 WSA，需要通过 `appops set [package name] ACTIVATE_VPN allow` 授予 VPN 权限。
+- **Report interface bugs here**, to this repository.
+- **Report protocol, connectivity or core bugs [upstream](https://github.com/2dust/v2rayNG/issues)** —
+  they are not introduced here and are not fixed here.
+- **Do not treat a FrostMost build as official v2rayNG.** It is not released by, endorsed by, or
+  signed with the keys of the v2rayNG project.
 
 ---
 
+## Download / Скачать
 
-## GPG Verification / GPG 签名校验
+FrostMost releases / Релизы FrostMost:
 
-Release files are signed with GPG to verify authenticity and integrity, helping prevent mirror, ISP, or CDN hijacking.
+**https://github.com/FrostmonsterSP/frostmost/releases**
 
-发布文件已使用 GPG 签名，可用于校验文件真实性与完整性，预防镜像站、运营商或 CDN 劫持。
+Pick the APK matching your device ABI (`arm64-v8a` for almost every phone). The `universal` APK runs
+anywhere but is larger. Files with `-fdroid` in the name are the F-Droid-flavoured build; the in-app
+updater selects the right one automatically.
 
-### Fingerprint / 公钥指纹
+Выбирайте APK под архитектуру устройства (`arm64-v8a` подходит почти любому телефону). `universal`
+работает везде, но больше по размеру. Файлы с `-fdroid` в имени — сборка варианта F-Droid; встроенный
+апдейтер выбирает нужный сам.
+
+> [!IMPORTANT]
+> FrostMost has its own signing keys and is **not** signed with an upstream v2rayNG key.
+> A FrostMost APK does not upgrade an installed v2rayNG, and a v2rayNG APK does not upgrade an
+> installed FrostMost: they are separate applications with separate application ids.
+
+> [!IMPORTANT]
+> У FrostMost собственные ключи подписи, и он **не** подписан ключом апстрима v2rayNG.
+> APK FrostMost не обновляет установленный v2rayNG, и наоборот — это разные приложения с разными
+> application id.
+
+For the upstream client and its releases, see [https://github.com/2dust/v2rayNG](https://github.com/2dust/v2rayNG).
+
+Апстримный клиент и его релизы — здесь: [https://github.com/2dust/v2rayNG](https://github.com/2dust/v2rayNG).
+
+---
+
+## GPG Verification / Проверка подписи GPG
+
+FrostMost release files are signed with a GPG key owned by this fork, to verify authenticity and
+integrity and to protect against mirror, ISP or CDN tampering. It is **not** the upstream v2rayNG
+key: a signature published here means "this file came from FrostMost" and nothing more.
+
+Релизные файлы FrostMost подписаны GPG-ключом этого форка — для проверки подлинности и целостности
+и для защиты от подмены на зеркале, у провайдера или в CDN. Это **не** ключ апстрима v2rayNG: подпись
+здесь означает «файл выпущен FrostMost» и ничего больше.
+
+### Fingerprint / Отпечаток ключа
 
 ```text
-7694 5E9F 3E9A 168F 8070 F195 805D 661C
-134D FAF6 8903 C199 463C 31E5 AE90 3AE0
+1CCA 33F5 E8A6 7CC3 62E2 14EC 77A5 DACA
+C461 9451
 ```
+
+Key: `FrostMost Releases <frostmost@depworks.pro>`, Ed25519, no expiry.
+
+Ключ: `FrostMost Releases <frostmost@depworks.pro>`, Ed25519, без срока действия.
+
+> [!CAUTION]
+> This key signs release files only. Verify that the fingerprint printed by `gpg --verify` matches
+> the block above character for character. The fork also has a **separate** Android signing key for
+> the APK itself, and neither of them is the upstream v2rayNG key.
+>
+> Этот ключ подписывает только релизные файлы. Сверьте отпечаток, который печатает `gpg --verify`,
+> с блоком выше посимвольно. У форка есть ещё **отдельный** ключ подписи Android для самого APK, и
+> ни один из них не является ключом апстрима v2rayNG.
+
+### Verifying a release / Как проверить релиз
+
+Every APK is published next to a detached signature (`<apk>.sig`) and the fork's public key
+(`frostmost-public-key.asc`).
+
+Каждый APK публикуется вместе с отсоединённой подписью (`<apk>.sig`) и открытым ключом форка
+(`frostmost-public-key.asc`).
+
+```sh
+gpg --import frostmost-public-key.asc
+gpg --verify frostmost_0.9.0rc_arm64-v8a.apk.sig frostmost_0.9.0rc_arm64-v8a.apk
+```
+
+A good result prints `Good signature` and the fingerprint above. If the fingerprint differs, stop:
+the file is not a FrostMost release.
+
+Хороший результат печатает `Good signature` и отпечаток выше. Если отпечаток отличается —
+остановитесь: файл не является релизом FrostMost.
+
+This GPG signature is separate from the APK signing scheme. FrostMost APKs also carry the fork's own
+Android signing key, which is why FrostMost cannot be installed over v2rayNG or updated by a v2rayNG
+build.
+
+Подпись GPG — отдельная от подписи APK. APK FrostMost подписаны ещё и собственным ключом Android
+форка, поэтому FrostMost нельзя установить поверх v2rayNG или обновить сборкой v2rayNG.
 
 ---
 
-## Community / 社区
+## Geoip and Geosite / Geoip и Geosite
 
-Telegram Group / Telegram 群组：
+- geoip.dat and geosite.dat files are in `Android/data/pro.depworks.frostmost/files/assets` (the path may differ on some Android devices)
+- the in-app download fetches the enhanced version from [this repo](https://github.com/Loyalsoldier/v2ray-rules-dat) (needs a working proxy)
+- the latest official [domain list](https://github.com/Loyalsoldier/v2ray-rules-dat) and [IP list](https://github.com/Loyalsoldier/geoip) can be imported manually
+- a third-party dat file can be placed in the same folder, for example [h2y](https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6)
 
-[https://t.me/v2rayN](https://t.me/v2rayN)
+- Файлы geoip.dat и geosite.dat лежат в `Android/data/pro.depworks.frostmost/files/assets` (на некоторых устройствах путь может отличаться)
+- Загрузка в приложении берёт расширенную версию из [этого репозитория](https://github.com/Loyalsoldier/v2ray-rules-dat) (нужен рабочий прокси)
+- Актуальные официальные [список доменов](https://github.com/Loyalsoldier/v2ray-rules-dat) и [список IP](https://github.com/Loyalsoldier/geoip) можно импортировать вручную
+- В ту же папку можно положить сторонний dat-файл, например [h2y](https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6)
 
-Telegram Channel / Telegram 频道：
+Upstream documentation lives in the [upstream wiki](https://github.com/2dust/v2rayNG/wiki).
 
-[https://t.me/github_2dust](https://t.me/github_2dust)
+Документация апстрима — в [вики апстрима](https://github.com/2dust/v2rayNG/wiki).
+
+---
+
+## Development guide / Разработка
+
+- The Android project is under `V2rayNG/` and builds with the Gradle wrapper or Android Studio.
+- `V2rayNG/app/libs/libv2ray.aar` is built from
+  [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) and is not modified by this fork.
+  For a quick start on rebuilding it, see [Go Mobile](https://github.com/golang/go/wiki/Mobile) and
+  [Makefiles for Go Developers](https://tutorialedge.net/golang/makefiles-for-go-developers/).
+- `V2rayNG/app/libs` (the HEV tunnel libraries) is generated by `compile-hevtun.sh` from the
+  `hev-socks5-tunnel` submodule. Run it before building a clean checkout.
+- FrostMost runs on Android emulators. For WSA, grant the VPN permission with
+  `appops set pro.depworks.frostmost ACTIVATE_VPN allow`.
+
+- Android-проект находится в `V2rayNG/` и собирается через Gradle wrapper или Android Studio.
+- `V2rayNG/app/libs/libv2ray.aar` собирается из
+  [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) и этим форком не изменяется.
+  Быстрый старт по его пересборке — [Go Mobile](https://github.com/golang/go/wiki/Mobile) и
+  [Makefiles for Go Developers](https://tutorialedge.net/golang/makefiles-for-go-developers/).
+- `V2rayNG/app/libs` (библиотеки туннеля HEV) генерируется скриптом `compile-hevtun.sh` из
+  сабмодуля `hev-socks5-tunnel`. Запустите его перед сборкой чистого клона.
+- FrostMost запускается на эмуляторах Android. Для WSA выдайте разрешение VPN командой
+  `appops set pro.depworks.frostmost ACTIVATE_VPN allow`.
+
+---
+
+## Community / Сообщество
+
+FrostMost follows upstream, so protocol and core discussion belongs upstream.
+
+FrostMost следует за апстримом, поэтому обсуждение протоколов и ядра — на стороне апстрима.
+
+- Telegram Group: [https://t.me/v2rayN](https://t.me/v2rayN)
+- Telegram Channel: [https://t.me/github_2dust](https://t.me/github_2dust)
+
+---
+
+## License / Лицензия
+
+FrostMost is a fork of v2rayNG and keeps its license (GPL-3.0, see [LICENSE](LICENSE)). Copyright in
+the upstream code remains with the v2rayNG project and its contributors.
+
+FrostMost — форк v2rayNG и сохраняет его лицензию (GPL-3.0, см. [LICENSE](LICENSE)). Авторские права
+на апстримный код остаются у проекта v2rayNG и его участников.

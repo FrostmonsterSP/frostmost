@@ -118,15 +118,28 @@ fun AboutScreen(
                     onClick = { Utils.openUri(context, AppConfig.APP_ISSUES_URL) }
                 )
                 SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_telegram_24dp),
-                    title = stringResource(R.string.title_tg_channel),
-                    onClick = { Utils.openUri(context, AppConfig.TG_CHANNEL_URL) }
-                )
-                SettingsMenuItem(
                     icon = painterResource(R.drawable.ic_privacy_24dp),
                     title = stringResource(R.string.title_privacy_policy),
                     onClick = { Utils.openUri(context, AppConfig.APP_PRIVACY_POLICY) }
                 )
+            }
+            FrostCardGroup(Modifier.padding(horizontal = FrostSpacing.screenH)) {
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = FrostSpacing.l,
+                        vertical = FrostSpacing.m,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
+                ) {
+                    // States plainly what this build is. Without it the screen names a version and
+                    // a repository that look like upstream v2rayNG's, which misleads the user about
+                    // who made the build and where its bugs belong.
+                    Text(
+                        text = stringResource(R.string.about_fork_notice),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             VersionInfoBlock(
                 versionText = versionText,

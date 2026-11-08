@@ -75,17 +75,58 @@ object UpdateCheckerManager {
         }
     }
 
-    private fun compareVersions(version1: String, version2: String): Int {
-        val v1 = version1.split(".")
-        val v2 = version2.split(".")
+    internal fun compareVersions(version1: String, version2: String): Int {
+        val v1 = parseVersion(version1)
+        val v2 = parseVersion(version2)
 
-        for (i in 0 until maxOf(v1.size, v2.size)) {
-            val num1 = if (i < v1.size) v1[i].toInt() else 0
-            val num2 = if (i < v2.size) v2[i].toInt() else 0
-            if (num1 != num2) return num1 - num2
+        for (i in 0 until maxOf(v1.numbers.size, v2.numbers.size)) {
+            val num1 = v1.numbers.getOrElse(i) { 0 }
+            val num2 = v2.numbers.getOrElse(i) { 0 }
+            if (num1 != num2) return if (num1 > num2) 1 else -1
         }
-        return 0
+
+        // Same numbers: a plain release outranks its own pre-release, and among
+        // pre-releases the larger suffix wins (rc2 > rc1). Shorter suffixes sort
+        // first, so 0.9.0rc < 0.9.0rc1 < 0.9.0.
+        if (v1.preRelease == v2.preRelease) return 0
+        if (v1.preRelease.isEmpty()) return 1
+        if (v2.preRelease.isEmpty()) return -1
+        return v1.preRelease.compareTo(v2.preRelease).coerceIn(-1, 1)
     }
+
+    /**
+     * Parses a release tag or version name such as `0.9.0rc`, `v0.9.0-rc1` or `2.3.15`.
+     *
+     * Only the leading digits of each dot-separated segment are compared numerically; anything
+     * after them (`rc`, `-rc1`, `beta`) is kept as a pre-release marker. The previous
+     * implementation called `toInt()` on the whole segment, which threw
+     * `NumberFormatException` on any version carrying a suffix and made update checks fail.
+     */
+    internal fun parseVersion(version: String): ParsedVersion {
+        val normalized = version.trim().removePrefix("v").removePrefix("V")
+        val numbers = mutableListOf<Int>()
+        val preRelease = StringBuilder()
+
+        // The pre-release marker starts at the first segment that is not purely numeric,
+        // and everything from there on belongs to it, so `1.0.0-rc.1` keeps "rc.1".
+        var inPreRelease = false
+        normalized.split(".").forEach { segment ->
+            if (inPreRelease) {
+                preRelease.append(segment)
+                return@forEach
+            }
+            val digits = segment.takeWhile { it.isDigit() }
+            if (digits.isEmpty() || digits.length != segment.length) {
+                inPreRelease = true
+                preRelease.append(segment.removePrefix(digits))
+            }
+            numbers += digits.toIntOrNull() ?: 0
+        }
+
+        return ParsedVersion(numbers, preRelease.toString().trimStart('-', '+', '_', ' '))
+    }
+
+    internal data class ParsedVersion(val numbers: List<Int>, val preRelease: String)
 
     private fun getDownloadUrl(release: GitHubRelease, abi: String): String {
         val fDroid = "fdroid"
