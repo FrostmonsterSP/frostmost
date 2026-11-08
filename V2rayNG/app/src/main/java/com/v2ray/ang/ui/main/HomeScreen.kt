@@ -16,13 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -73,10 +67,12 @@ import com.v2ray.ang.ui.compose.FrostPrimaryButton
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.LocalStatusColors
 import com.v2ray.ang.ui.compose.frostCardColors
-import com.v2ray.ang.ui.compose.frostInnerColors
 import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.frostRaisedColors
+import com.v2ray.ang.ui.compose.frostPrimaryActionColors
 import com.v2ray.ang.ui.compose.frostSecondaryActionColors
+import com.v2ray.ang.ui.compose.frostTopBarActionColors
+import com.v2ray.ang.ui.compose.topBarOnAccentColors
 
 /**
  * Home screen of the fork: which subscription, whether the VPN is on, and how to turn it on.
@@ -207,23 +203,20 @@ fun HomeScreen(
                 HomeEmpty(onAdd = { sheet = HomeSheet.Add })
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap)) {
-                    if (cards.size > 1) {
-                        // Above the card and outside its plate. The shown card simply *is* this page
-                        // while connected, so the row states that fact instead of repeating the
-                        // page's own colour a second time: the selected pill keeps the scheme's
-                        // inner tone, white in either state, and the dot stays the accent.
-                        HomeSubscriptionRow(
-                            cards = cards,
-                            shownId = card.id,
-                            onSelect = { id -> onAction(MainAction.SwitchSubscription(id, card.id)) },
-                        )
-                    }
-                    HeroConnectionCard(
-                        card = card,
+                    // The cards themselves, side by side: a swipe moves between subscriptions and
+                    // the dots under the card say how many there are and which one is shown. The
+                    // named chip row that used to sit here repeated every name in text above a card
+                    // that already says which subscription it is. Below the cards the switcher menu
+                    // that offered the same choice is gone too, so the swipe and its dots are the
+                    // only way to change subscription.
+                    HomeSubscriptionPager(
+                        cards = cards,
+                        shownId = card.id,
                         connection = connection,
-                        accent = if (accentPage.onAccent) accentPage.accent!! else accent,
+                        onAccent = accentPage.onAccent,
+                        onSwitch = { id -> onAction(MainAction.SwitchSubscription(id, card.id)) },
                         onToggle = { onAction(MainAction.ToggleService) },
-                        onConfigure = { onEditSubscription(card.id) },
+                        onConfigure = onEditSubscription,
                     )
                     HomeActionRow(
                         card = card,
@@ -389,14 +382,19 @@ internal const val SECONDARY_ALPHA = 0.72f
  * accent page it takes the translucent white plate with the page's white foreground. It used to
  * keep the scheme's filled pair in both states, which turned it into a dark slab in the middle of
  * the accent field while the button next to it was translucent — one bar drawn in two languages.
+ *
+ * The neutral page keeps that filled pair, and it is the *scheme's*, never a role of its own
+ * theme: the plate is opaque on purpose. It was `frostSecondaryActionColors`, a translucent tonal
+ * surface that read as a black slab at the top-left of the accent page — see
+ * [frostTopBarActionColors].
  */
 @Composable
 private fun AddButton(onAccent: Boolean, onClick: () -> Unit) {
     FrostSurface(
         colors = if (onAccent) {
-            FrostSurfaceColors(Color.White.copy(alpha = HOME_ON_ACCENT_OVERLAY), ACCENT_ON_PAGE)
+            topBarOnAccentColors()
         } else {
-            frostSecondaryActionColors(enabled = true)
+            frostPrimaryActionColors(enabled = true)
         },
         modifier = Modifier.defaultMinSize(minHeight = FrostSpacing.touchTarget),
         shape = FrostRadius.tile,
@@ -435,12 +433,11 @@ private fun HomeTopBarAction(
 ) {
     FrostSurface(
         // On the accent page the tile takes the translucent white plate the blocks below the card
-        // use; on the neutral page it keeps the scheme's own pair.
-        colors = if (onAccent) {
-            FrostSurfaceColors(Color.White.copy(alpha = HOME_ON_ACCENT_OVERLAY), ACCENT_ON_PAGE)
-        } else {
-            frostPageColors()
-        },
+        // use. On the neutral page it must NOT take `frostPageColors()`: that is `background`, the
+        // exact colour the bar is drawn on, so the tile disappeared into the page and read as a
+        // bare glyph; it now takes the raised neutral step of the scheme, which is opaque and one
+        // tone above the page in both themes.
+        colors = if (onAccent) topBarOnAccentColors() else frostTopBarActionColors(),
         shape = FrostRadius.tile,
         onClick = onClick,
         onClickLabel = contentDescription,
@@ -574,83 +571,6 @@ internal fun formatHomeDate(millis: Long): String {
     val locale = LocalConfiguration.current.locales[0]
     return DateFormat.getDateInstance(DateFormat.LONG, locale).format(Date(millis))
 }
-
-/**
- * The subscription buttons: named targets for every card, the accessible equivalent of a swipe.
- *
- * The row sits above the hero card, on the page. While the page is on the accent the shown card
- * *is* that page, so repeating the accent on the selected pill would paint the same colour on
- * itself. The pill therefore keeps the scheme's inner tone in both states — white text either way —
- * and the dot carries the subscription's identity as it always does. On the neutral page the
- * behaviour is unchanged.
- */
-@Composable
-private fun HomeSubscriptionRow(
-    cards: List<HomeCard>,
-    shownId: String,
-    onSelect: (String) -> Unit,
-) {
-    val listState = rememberLazyListState()
-    val latestCards by rememberUpdatedState(cards)
-    // Keep the active button fully visible, also after the list changes.
-    LaunchedEffect(shownId, cards.size) {
-        val index = latestCards.indexOfFirst { it.id == shownId }
-        if (index < 0) return@LaunchedEffect
-        val layout = listState.layoutInfo
-        val item = layout.visibleItemsInfo.firstOrNull { it.index == index }
-        val fullyVisible = item != null && item.offset >= 0 &&
-                item.offset + item.size <= layout.viewportEndOffset - layout.afterContentPadding
-        if (!fullyVisible) listState.animateScrollToItem(index)
-    }
-    val label = stringResource(R.string.home_subscriptions)
-    LazyRow(
-        state = listState,
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectableGroup()
-            .semantics { this.contentDescription = label },
-        horizontalArrangement = Arrangement.spacedBy(FrostSpacing.xs),
-    ) {
-        items(cards, key = { it.id }) { card ->
-            val selected = card.id == shownId
-            val accent = Color(accentColor(card.accent, LocalDarkTheme.current))
-            val colors = if (selected) {
-                FrostSurfaceColors(accent, Color.White)
-            } else {
-                frostInnerColors()
-            }
-            FrostSurface(
-                colors = colors,
-                shape = FrostRadius.pill,
-                modifier = Modifier
-                    .heightIn(min = FrostSpacing.touchTarget)
-                    .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(card.id) }),
-            ) {
-                Row(
-                    Modifier.padding(start = FrostSpacing.m, end = FrostSpacing.l, top = FrostSpacing.s, bottom = FrostSpacing.s),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(FrostSpacing.s),
-                ) {
-                    Box(
-                        Modifier
-                            .size(DOT_SIZE)
-                            .clip(CircleShape)
-                            .background(if (selected) Color.White else accent)
-                    )
-                    Text(
-                        card.name,
-                        style = MaterialTheme.typography.labelLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
-}
-
-/** The subscription colour dot of a chip: a hint next to the name, never the only channel. */
-private val DOT_SIZE = 10.dp
 
 /**
  * "Update", "Account", "Support" under the card; missing data hides the button.

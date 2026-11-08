@@ -2,6 +2,7 @@ package com.v2ray.ang.ui.main
 
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.entities.SubscriptionCache
+import com.v2ray.ang.ui.compose.FrostSurfaceColors
 
 /**
  * Pure model of the home screen; no Android or Compose dependencies. Identity is by group id /
@@ -223,6 +224,18 @@ internal fun accentColor(accent: Int, dark: Boolean): Long =
 
 // ---------- Accent page ----------
 
+/**
+ * How much white is mixed into the accent while the VPN is on: the card lifts from "the plain
+ * accent" to "the accent, lit". It is a *lift of the same hue*, not a different colour, so the card
+ * keeps the identity of its subscription and only gains the reading that says the tunnel is up.
+ *
+ * 0.16 was chosen at the light palette's darkest entries, which are the ones with the least room
+ * before white text starts to lose contrast: it is a visible step on every hue, and white still
+ * clears 4.5:1 at the worst accent in both palettes. Mixing this back towards white would erase the
+ * step; mixing more would start to read as a pale card with a bright title.
+ */
+internal const val HOME_CARD_LIT_WHITE = 0.16f
+
 /** `on-accent`: the foreground of anything drawn on a subscription accent. */
 internal val ACCENT_ON_PAGE = androidx.compose.ui.graphics.Color.White
 
@@ -257,6 +270,46 @@ internal data class HomeAccentPage(
     /** `on-accent-muted`, or null when the page is not accented. */
     val muted: androidx.compose.ui.graphics.Color?,
 )
+
+/**
+ * The card's own surface: what fills it, and the foreground everything on it is drawn in.
+ *
+ * At rest the card *is* its subscription accent — the palette entry as it comes. While the VPN is
+ * on the same accent is lifted by [HOME_CARD_LIT_WHITE], so the whole plate brightens as one block
+ * instead of only its status chip changing colour. Both states share [ACCENT_ON_PAGE]: the lift is
+ * small enough that the white-text threshold holds at the darkest accent of each palette, which is
+ * why one foreground covers the pair.
+ *
+ * Pure function on purpose: the composable feeds it the accent of the card's palette entry and the
+ * theme, and `HomeModelsTest`/`ColourSchemeTest` assert the contrast of the result for every entry.
+ */
+internal fun homeCardHighlight(
+    accent: androidx.compose.ui.graphics.Color,
+    connected: Boolean,
+): FrostSurfaceColors =
+    FrostSurfaceColors(
+        container = if (connected) accent.mixTowardsWhite(HOME_CARD_LIT_WHITE) else accent,
+        content = ACCENT_ON_PAGE,
+    )
+
+/**
+ * [fraction] of white mixed into this colour, alpha kept at full opacity.
+ *
+ * Compositing white *over* the accent, not interpolating the ARGB words: the alpha channel of an
+ * opaque colour is 0xFF in both ends, so only the three channels move and the result can never come
+ * out translucent — the failure that once turned the accent page into a wash.
+ */
+internal fun androidx.compose.ui.graphics.Color.mixTowardsWhite(
+    fraction: Float,
+): androidx.compose.ui.graphics.Color {
+    val t = fraction.coerceIn(0f, 1f)
+    return androidx.compose.ui.graphics.Color(
+        red = red + (1f - red) * t,
+        green = green + (1f - green) * t,
+        blue = blue + (1f - blue) * t,
+        alpha = 1f,
+    )
+}
 
 /**
  * The page accent of one card. A connected VPN fills the whole page with the accent of the
@@ -324,6 +377,21 @@ internal data class HomeConnection(
      * instead of inferring it.
      */
     val isConnecting: Boolean,
+)
+
+/**
+ * The connection a card that is not the shown one reports: it knows nothing about the running VPN,
+ * so it must not claim any of it. A preview reads "off", cannot start or stop anything, and carries
+ * no server line of its own — showing the *shown* subscription's server under another
+ * subscription's name was the one wrong reading this pager could produce.
+ */
+internal fun HomeConnection.disconnected(serverName: String?): HomeConnection = HomeConnection(
+    status = HomeStatus.DISCONNECTED,
+    serverName = serverName,
+    delayMillis = null,
+    isRunning = false,
+    powerEnabled = false,
+    isConnecting = false,
 )
 
 /** String resource naming a routing preset; null is the "custom rules" state. */

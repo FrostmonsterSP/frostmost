@@ -593,8 +593,6 @@
     <string name="home_status_switching">Переключаюсь</string>
     <string name="home_status_connected">Подключено</string>
     <string name="home_status_failed">Не удалось подключиться</string>
-    <string name="home_server">Сервер: %1$s</string>
-    <string name="home_server_delay">%1$s, %2$d мс</string>
     <string name="home_server_none">Сервер не выбран</string>
     <string name="home_action_update">Обновить</string>
     <string name="home_action_updating">Обновляю…</string>

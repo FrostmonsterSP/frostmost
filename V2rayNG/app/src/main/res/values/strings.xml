@@ -590,8 +590,6 @@
     <string name="home_status_switching">Switching</string>
     <string name="home_status_connected">Connected</string>
     <string name="home_status_failed">Couldn’t connect</string>
-    <string name="home_server">Server: %1$s</string>
-    <string name="home_server_delay">%1$s, %2$d ms</string>
     <string name="home_server_none">No server selected</string>
     <string name="home_action_update">Update</string>
     <string name="home_action_updating">Updating…</string>

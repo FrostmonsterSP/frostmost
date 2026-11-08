@@ -50,6 +50,15 @@ internal val HomeMotionEmphasisColorSpec: TweenSpec<Color> =
     tween(durationMillis = HOME_MOTION_EMPHASIS_MS, easing = FastOutSlowInEasing)
 
 /**
+ * The card opening and closing as the connection comes up and goes down: a structural change the
+ * user is looking at, so it takes the emphasis length, and it is longer than [HomeMotionFadeSpec]
+ * so the colour of the card and the air inside it move together instead of the colour arriving
+ * first. Fed to `animateFloatAsState`/`animateColorAsState`.
+ */
+internal val HomeMotionRevealSpec: TweenSpec<Float> =
+    tween(durationMillis = HOME_MOTION_EMPHASIS_MS, easing = FastOutSlowInEasing)
+
+/**
  * The press scale of a tile, as a spec rather than a raw spring: no bounce, so a finger that rests
  * on a tile does not make it wobble. Fed to `animateFloatAsState`, so it is typed on `Float`.
  */
