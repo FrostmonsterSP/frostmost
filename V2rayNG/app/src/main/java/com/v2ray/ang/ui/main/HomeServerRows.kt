@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -82,7 +83,9 @@ private fun HomeServerRow(
     onEdit: (String, ProfileItem) -> Unit,
     onRemove: (String, String) -> Unit,
 ) {
-    val detail = serverRowDetailLine(row)
+    // Protocol and transport only: the address and port are rarely what a name is chosen by, and
+    // one calm line reads better than a technical dump.
+    val detail = row.typeDescription
     val latency = latencyLabel(row.testDelayMillis)
     val selectedLabel = stringResource(R.string.acc_selected_server)
     var menuOpen by remember { mutableStateOf(false) }
@@ -100,13 +103,16 @@ private fun HomeServerRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Column(Modifier.weight(1f)) {
+            // An explicit content colour: on the accent background the inherited one washed the
+            // names into the surface, and every row looked the same.
             Text(
                 row.remarks,
                 style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (detail.isNotEmpty()) {
+            if (detail.isNotBlank()) {
                 Text(
                     detail,
                     style = MaterialTheme.typography.bodySmall,
@@ -116,18 +122,12 @@ private fun HomeServerRow(
                 )
             }
         }
-        if (latency != null) {
-            Text(
-                latency,
-                style = MaterialTheme.typography.labelMedium,
-                // Neutral unless it belongs to the selected server: a delay is information, not a verdict.
-                color = if (shouldTintLatency(isSelected)) {
-                    latencyColor(serverLatencyTone(row.testDelayMillis))
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
-        }
+        Text(
+            latency,
+            style = MaterialTheme.typography.labelLarge,
+            color = latencyColor(serverLatencyTone(row.testDelayMillis)),
+            maxLines = 1,
+        )
         if (isSelected) {
             Icon(
                 painterResource(R.drawable.ic_action_done),
@@ -160,14 +160,29 @@ private fun HomeServerRow(
     }
 }
 
-/** The measured delay as a short, localized label; null while the server has not been checked. */
+/** The measured delay as a short, localized label; an unmeasured server says so instead of hiding. */
 @Composable
-private fun latencyLabel(delayMillis: Long): String? =
-    if (delayMillis <= 0L) null else stringResource(R.string.server_test_delay_value, delayMillis)
+private fun latencyLabel(delayMillis: Long): String =
+    if (delayMillis <= 0L) stringResource(R.string.home_server_ping_unknown)
+    else stringResource(R.string.server_test_delay_value, delayMillis)
 
+/**
+ * The delay's own traffic light. Both tones are opaque and contrast-checked against the neutral
+ * surface the row sits on, so a value never fades into the page.
+ */
 @Composable
 private fun latencyColor(tone: ServerLatencyTone) = when (tone) {
-    ServerLatencyTone.Fast -> MaterialTheme.colorScheme.primary
-    ServerLatencyTone.Medium -> MaterialTheme.colorScheme.onSurfaceVariant
-    ServerLatencyTone.Slow, ServerLatencyTone.Unknown -> MaterialTheme.colorScheme.error
+    ServerLatencyTone.Fast -> PING_FAST_COLOR
+    ServerLatencyTone.Medium -> PING_MEDIUM_COLOR
+    ServerLatencyTone.Slow -> PING_SLOW_COLOR
+    ServerLatencyTone.Unknown -> MaterialTheme.colorScheme.onSurfaceVariant
 }
+
+/** Fast enough to be worth showing as good; fixed so the tone survives dynamic color. */
+private val PING_FAST_COLOR = Color(0xFF0A7455)
+
+/** Usable but not great. */
+private val PING_MEDIUM_COLOR = Color(0xFF8F4C08)
+
+/** Slow, or a measurement that failed. */
+private val PING_SLOW_COLOR = Color(0xFFB3261E)

@@ -629,6 +629,8 @@
     <string name="home_server_select">Выбрать этот сервер</string>
     <string name="home_server_actions_named">Действия для «%1$s»</string>
     <string name="home_servers_empty">В этой подписке нет серверов</string>
+    <string name="home_server_ping_unknown">—</string>
+    <string name="home_restart_needs_vpn">Чтобы перезапустить, включите VPN</string>
     <string name="home_check">Проверить</string>
     <string name="home_check_stop">Остановить</string>
     <string name="home_restart">Перезапустить</string>

@@ -12,6 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -179,15 +184,18 @@ private fun LazyListScope.serversSection(
             onClick = { onSectionChange(sectionState.toggle(HomeSection.Servers)) },
         )
     }
-    if (!sectionState.isExpanded(HomeSection.Servers)) return
+    // Check, restart and the list menu stay on screen whether or not the list is open: they act on
+    // the subscription, not on the visible rows.
     item(key = "servers-tools") {
         ServersSectionTools(
             isRunning = isRunning,
             isTesting = isTesting,
+            colors = colors,
             onAction = onAction,
             onMenu = dialogs::onMenu,
         )
     }
+    if (!sectionState.isExpanded(HomeSection.Servers)) return
     serverRowItems(
         rows = rows,
         selectedGuid = uiState.selectedGuid,
@@ -281,26 +289,41 @@ private fun OwnRulesRow(onClick: () -> Unit) {
     }
 }
 
-/** Check, restart and the list menu of the servers section, directly under its header. */
+/**
+ * Check, restart and the list menu of the servers section. Both actions are filled tiles so they
+ * read as controls rather than loose text, and they remain visible with the list collapsed.
+ */
 @Composable
 private fun ServersSectionTools(
     isRunning: Boolean,
     isTesting: Boolean,
+    colors: OnBackgroundColors,
     onAction: (MainAction) -> Unit,
     onMenu: (MainMoreMenuAction) -> Unit,
 ) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 8.dp),
+            .padding(start = 24.dp, end = 8.dp, top = 4.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = { onAction(if (isTesting) MainAction.CancelTesting else MainAction.TestRealAllServers) }) {
-            Text(stringResource(if (isTesting) R.string.home_check_stop else R.string.home_check))
-        }
-        TextButton(enabled = isRunning, onClick = { onAction(MainAction.RestartService) }) {
-            Text(stringResource(R.string.home_restart))
-        }
+        ServerToolButton(
+            label = stringResource(if (isTesting) R.string.home_check_stop else R.string.home_check),
+            iconRes = if (isTesting) R.drawable.ic_stop_24dp else R.drawable.ic_qu_start_24dp,
+            colors = colors,
+            onClick = { onAction(if (isTesting) MainAction.CancelTesting else MainAction.TestRealAllServers) },
+        )
+        ServerToolButton(
+            label = stringResource(R.string.home_restart),
+            iconRes = R.drawable.ic_refresh_24dp,
+            colors = colors,
+            enabled = isRunning,
+            // TalkBack must know why a disabled restart cannot be pressed; with the VPN off there is
+            // nothing running to restart.
+            disabledHint = stringResource(R.string.home_restart_needs_vpn),
+            onClick = { onAction(MainAction.RestartService) },
+        )
         Box(Modifier.weight(1f))
         var menuOpen by remember { mutableStateOf(false) }
         IconButton(onClick = { menuOpen = true }) {
@@ -314,3 +337,41 @@ private fun ServersSectionTools(
         }
     }
 }
+
+/** One small, filled tool of the servers section: icon plus label on the section's own surface. */
+@Composable
+private fun ServerToolButton(
+    label: String,
+    @DrawableRes iconRes: Int,
+    colors: OnBackgroundColors,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    disabledHint: String? = null,
+) {
+    val container = if (enabled) colors.container else colors.container.copy(alpha = DISABLED_TILE_ALPHA)
+    val content = if (enabled) colors.content else colors.content.copy(alpha = DISABLED_CONTENT_ALPHA)
+    Row(
+        Modifier
+            .clip(SERVER_TOOL_SHAPE)
+            .background(container)
+            .clickable(enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .semantics {
+                if (!enabled && disabledHint != null) stateDescription = disabledHint
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(painterResource(iconRes), contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
+    }
+}
+
+/** Filled, softly rounded tools: visible as controls on both the neutral and the accent surface. */
+private val SERVER_TOOL_SHAPE = RoundedCornerShape(12.dp)
+
+/** A disabled control still has to be readable, so it dims rather than disappears. */
+private const val DISABLED_TILE_ALPHA = 0.45f
+
+/** Its label dims with the tile but keeps the same tone. */
+private const val DISABLED_CONTENT_ALPHA = 0.55f

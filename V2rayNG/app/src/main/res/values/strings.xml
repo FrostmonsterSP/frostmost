@@ -626,6 +626,8 @@
     <string name="home_server_select">Select this server</string>
     <string name="home_server_actions_named">Actions for %1$s</string>
     <string name="home_servers_empty">No servers in this subscription</string>
+    <string name="home_server_ping_unknown">—</string>
+    <string name="home_restart_needs_vpn">Turn the VPN on to restart it</string>
     <string name="home_check">Check</string>
     <string name="home_check_stop">Stop</string>
     <string name="home_restart">Restart</string>
