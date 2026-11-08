@@ -252,3 +252,43 @@ fun frostSecondaryActionColors(enabled: Boolean): FrostSurfaceColors = if (enabl
         MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+/**
+ * The filled pair, stated as its own name: the one button of the top bar uses it, and it must stay
+ * a filled *action*, not the quiet tonal plate of [frostSecondaryActionColors]. Passing the tonal
+ * plate for a button that reads as the primary one of its bar made it a black slab in the light
+ * theme and a grey one in the dark, beside a tile painted with the page's own pair.
+ */
+@Composable
+fun frostPrimaryActionColors(enabled: Boolean): FrostSurfaceColors = frostActionColors(enabled)
+
+/**
+ * A control of the top bar on the neutral page: the raised neutral step, opaque in both themes.
+ *
+ * It used to be [frostPageColors], i.e. `background` — the exact colour the bar is drawn on — so the
+ * tile dissolved into the page and its glyph floated with no visible target. A step of tone is what
+ * separates it, and the same step is what every other quiet control of the app uses.
+ */
+@Composable
+fun frostTopBarActionColors(): FrostSurfaceColors = FrostSurfaceColors(
+    container = MaterialTheme.colorScheme.surfaceContainerHigh,
+    content = MaterialTheme.colorScheme.onSurface,
+)
+
+/**
+ * A control that sits on the subscription accent: the translucent white plate, with the page's own
+ * `on-accent` as its foreground.
+ *
+ * This pair exists because the alternative was measurably wrong twice. A scheme role (`primary`, or
+ * `surfaceContainerHigh`) drawn over the accent turned the control into a dark slab; and the plate
+ * itself has to be *opaque enough* that the accent behind it does not read through as a different
+ * colour, which is why [HOME_ON_ACCENT_OVERLAY] is the one alpha every block below the card uses.
+ *
+ * `HOME_ON_ACCENT_OVERLAY` and `ACCENT_ON_PAGE` live in `ui/main/HomeModels.kt`: they are the
+ * home screen's own measured constants, and a Compose file may not depend on that package.
+ */
+@Composable
+fun topBarOnAccentColors(): FrostSurfaceColors = FrostSurfaceColors(
+    container = Color.White.copy(alpha = 0.10f),
+    content = Color.White,
+)
