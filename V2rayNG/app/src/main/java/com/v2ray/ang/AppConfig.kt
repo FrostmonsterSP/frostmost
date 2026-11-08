@@ -158,6 +158,11 @@ object AppConfig {
     const val GEOSITE_DAT = "geosite.dat"
     const val GEOIP_DAT = "geoip.dat"
     const val GEOIP_ONLY_CN_PRIVATE_DAT = "geoip-only-cn-private.dat"
+    /*
+     * Deliberately stays on Loyalsoldier whatever geo file source is selected: the runetfreedom
+     * release publishes only geosite.dat and geoip.dat, so this file has to come from Loyalsoldier.
+     * `UserAssetViewModel.buildAssetList()` forces this URL for that file name.
+     */
     const val GEOIP_ONLY_CN_PRIVATE_URL = "$GITHUB_RAW_URL/Loyalsoldier/geoip/release/$GEOIP_ONLY_CN_PRIVATE_DAT"
 
     /** Ports and addresses for various services. */
@@ -340,8 +345,16 @@ object AppConfig {
         "224.0.0.0/4"
     )
 
+    /**
+     * Repositories the built-in geo files are downloaded from, in display order.
+     *
+     * The order matters: the first entry is the default source, because
+     * `UserAssetActivity.getGeoFilesSources()` reads
+     * `MmkvManager.decodeSettingsString(PREF_GEO_FILES_SOURCES) ?: GEO_FILES_SOURCES.first()`.
+     * runetfreedom is first for the FrostMost fork: its audience is in Russia and the fork routing
+     * templates (see `assets/custom_routing_white_russia`) match `geosite:category-ru` and `geoip:ru`.
+     */
     val GEO_FILES_SOURCES = arrayListOf(
-        "Loyalsoldier/v2ray-rules-dat",
         "runetfreedom/russia-v2ray-rules-dat",
         "Chocolate4U/Iran-v2ray-rules"
     )

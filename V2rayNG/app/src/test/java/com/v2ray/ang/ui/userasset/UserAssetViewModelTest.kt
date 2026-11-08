@@ -28,6 +28,25 @@ class UserAssetViewModelTest {
     }
 
     @Test
+    fun defaultSourceIsRunetfreedomAndBuildsItsReleaseUrls() {
+        val defaultSource = AppConfig.GEO_FILES_SOURCES.first()
+        assertEquals("runetfreedom/russia-v2ray-rules-dat", defaultSource)
+
+        val rows = viewModel.buildAssetList(null, defaultSource)
+
+        listOf(AppConfig.GEOSITE_DAT, AppConfig.GEOIP_DAT).forEach { fileName ->
+            assertEquals(
+                "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/$fileName",
+                rows.single { it.assetUrl.remarks == fileName }.assetUrl.url,
+            )
+        }
+        assertEquals(
+            AppConfig.GEOIP_ONLY_CN_PRIVATE_URL,
+            rows.single { it.assetUrl.remarks == AppConfig.GEOIP_ONLY_CN_PRIVATE_DAT }.assetUrl.url,
+        )
+    }
+
+    @Test
     fun savedAssetKeepsItsIdentityAndReplacesMatchingBuiltIn() {
         val saved = AssetUrlCache("saved-guid", AssetUrlItem(AppConfig.GEOSITE_DAT, "https://example.invalid/geosite.dat"))
         val custom = AssetUrlCache("custom-guid", AssetUrlItem("custom.dat", "file"))

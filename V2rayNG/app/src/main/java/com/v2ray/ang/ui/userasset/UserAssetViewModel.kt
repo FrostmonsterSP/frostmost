@@ -67,7 +67,8 @@ class UserAssetViewModel(application: Application) : BaseViewModel(application) 
                     )
                 )
             }
-        // Force update URL for geoip-only-cn-private.dat
+        // geoip-only-cn-private.dat always comes from Loyalsoldier: the selected source (runetfreedom
+        // by default) does not publish that file, so its URL overrides the per-source one above.
         return (builtInItems + savedAssets).map { cache ->
             if (cache.assetUrl.remarks == AppConfig.GEOIP_ONLY_CN_PRIVATE_DAT) {
                 cache.copy(
