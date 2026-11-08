@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -33,13 +32,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.SubscriptionFailure
 import com.v2ray.ang.handler.ImportKind
 import com.v2ray.ang.ui.compose.ConfirmDialog
+import com.v2ray.ang.ui.compose.FrostPrimaryButton
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostTextButton
 import com.v2ray.ang.util.Utils
 
 /**
@@ -75,20 +75,19 @@ internal fun HomeFirstRun(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = minHeight)
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
-                verticalArrangement = Arrangement.Center,
+                    .padding(horizontal = FrostSpacing.screenH, vertical = FrostSpacing.xl),
+                verticalArrangement = Arrangement.spacedBy(FrostSpacing.s, Alignment.CenterVertically),
             ) {
                 Text(
                     stringResource(R.string.home_first_title),
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
                 )
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
+                        .padding(top = FrostSpacing.s),
                     label = { Text(stringResource(R.string.home_first_field)) },
                     trailingIcon = {
                         TextButton(onClick = { text = clipboardText(context) }) {
@@ -110,7 +109,7 @@ internal fun HomeFirstRun(
                     Text(
                         stringResource(error),
                         modifier = Modifier
-                            .padding(top = 8.dp)
+                            .padding(top = FrostSpacing.xs)
                             .semantics { liveRegion = LiveRegionMode.Polite },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
@@ -118,30 +117,30 @@ internal fun HomeFirstRun(
                 } else {
                     Text(
                         stringResource(R.string.home_empty_hint),
-                        modifier = Modifier.padding(top = 8.dp),
+                        modifier = Modifier.padding(top = FrostSpacing.xs),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                // One filled action at a time: retry when the last address failed, otherwise add.
                 if (failure != null) {
-                    Button(
+                    FrostPrimaryButton(
+                        label = stringResource(R.string.home_import_retry),
                         onClick = { onAction(MainAction.RetryImport) },
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(top = 12.dp),
-                    ) { Text(stringResource(R.string.home_import_retry)) }
+                        modifier = Modifier.padding(top = FrostSpacing.xs),
+                    )
                 } else if (canAdd) {
-                    Button(
+                    FrostPrimaryButton(
+                        label = stringResource(R.string.home_add),
                         onClick = add,
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(top = 12.dp),
-                    ) { Text(stringResource(R.string.home_add)) }
+                        modifier = Modifier.padding(top = FrostSpacing.xs),
+                    )
                 }
-                TextButton(
+                FrostTextButton(
+                    label = stringResource(R.string.home_add_other),
                     onClick = onOtherWays,
-                    modifier = Modifier.padding(top = 16.dp),
-                ) { Text(stringResource(R.string.home_add_other)) }
+                    modifier = Modifier.padding(top = FrostSpacing.s),
+                )
             }
         }
     }
@@ -158,10 +157,10 @@ internal fun HomeDownloading() {
     Column(
         Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(FrostSpacing.xl)
             .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(FrostSpacing.l, Alignment.CenterVertically),
     ) {
         CircularProgressIndicator()
         Text(label, style = MaterialTheme.typography.bodyLarge)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,13 +23,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -40,6 +42,51 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
+
+/**
+ * Dialogs of FrostMost.
+ *
+ * Two constraints shape this file. First, Material's `AlertDialog` takes no `contentColor`, so a
+ * colour can only arrive through `containerColor`/`textContentColor`/`titleContentColor` or through
+ * an explicit `Text(color = …)`: every text here therefore inherits from the dialog's own colours
+ * and never assumes the page's. Second, a dialog is a card on a scrim, so it takes
+ * [FrostRadius.card] and the card's own surface pair instead of Material's tinted defaults.
+ */
+
+/**
+ * An action of a dialog. It is [FrostTextButton] plus an optional leading glyph, because a
+ * destructive confirmation reads better with the trash icon it destroys with; the glyph is
+ * decorative, since the label already names the action.
+ */
+@Composable
+private fun DialogAction(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: @Composable (() -> Unit)? = null,
+) {
+    if (leadingIcon == null) {
+        FrostTextButton(label = label, onClick = onClick, modifier = modifier)
+        return
+    }
+    Row(
+        modifier
+            .heightIn(min = FrostSpacing.touchTarget)
+            .clip(FrostRadius.tile)
+            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
+            .padding(horizontal = FrostSpacing.m),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(FrostSpacing.xs),
+    ) {
+        leadingIcon()
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+        )
+    }
+}
 
 @Composable
 fun ConfirmDialog(
@@ -54,6 +101,7 @@ fun ConfirmDialog(
 ) {
     val confirmFocusRequester = remember { FocusRequester() }
     val dismissFocusRequester = remember { FocusRequester() }
+    val card = frostCardColors()
 
     LaunchedEffect(dismissText) {
         if (dismissText != null) dismissFocusRequester.requestFocus()
@@ -62,36 +110,46 @@ fun ConfirmDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = title?.let { { Text(it) } },
+        title = title?.let {
+            {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = card.content,
+                )
+            }
+        },
         text = {
             Text(
                 text = message,
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodyMedium,
+                color = card.muted(),
                 textAlign = messageTextAlign
             )
         },
         confirmButton = {
-            TextButton(
+            DialogAction(
+                label = confirmText,
                 onClick = { onConfirm(); onDismiss() },
-                modifier = Modifier.focusRequester(confirmFocusRequester)
-            ) {
-                confirmIcon?.invoke()
-                if (confirmIcon != null) Spacer(Modifier.width(8.dp))
-                Text(confirmText)
-            }
+                modifier = Modifier.focusRequester(confirmFocusRequester),
+                leadingIcon = confirmIcon,
+            )
         },
         dismissButton = dismissText?.let { text ->
             {
-                TextButton(
+                DialogAction(
+                    label = text,
                     onClick = onDismiss,
-                    modifier = Modifier.focusRequester(dismissFocusRequester)
-                ) {
-                    Text(text)
-                }
+                    modifier = Modifier.focusRequester(dismissFocusRequester),
+                )
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = card.container,
+        textContentColor = card.content,
+        titleContentColor = card.content,
+        shape = FrostRadius.card,
+        tonalElevation = 0.dp,
     )
 }
 
@@ -135,13 +193,21 @@ fun InputDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val card = frostCardColors()
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = card.content,
+            )
+        },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(FrostSpacing.m)
             ) {
                 fields.forEachIndexed { index, field ->
                     OutlinedTextField(
@@ -154,10 +220,10 @@ fun InputDialog(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
-                            cursorColor = MaterialTheme.colorScheme.secondary,
+                            cursorColor = MaterialTheme.colorScheme.primary,
                             selectionColors = TextSelectionColors(
-                                handleColor = MaterialTheme.colorScheme.secondary,
-                                backgroundColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
+                                handleColor = MaterialTheme.colorScheme.primary,
+                                backgroundColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
                             )
                         ),
                         modifier = Modifier.fillMaxWidth()
@@ -166,12 +232,16 @@ fun InputDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text(confirmText) }
+            DialogAction(label = confirmText, onClick = onConfirm)
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(dismissText) }
+            DialogAction(label = dismissText, onClick = onDismiss)
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = card.container,
+        textContentColor = card.content,
+        titleContentColor = card.content,
+        shape = FrostRadius.card,
+        tonalElevation = 0.dp,
     )
 }
 
@@ -181,6 +251,7 @@ fun QRCodeDialog(
     onDismiss: () -> Unit
 ) {
     if (bitmap == null) return
+    val card = frostCardColors()
     AlertDialog(
         onDismissRequest = onDismiss,
         text = {
@@ -190,19 +261,25 @@ fun QRCodeDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
+                    .clip(FrostRadius.inner),
             )
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
+            DialogAction(label = stringResource(R.string.action_close), onClick = onDismiss)
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = card.container,
+        textContentColor = card.content,
+        shape = FrostRadius.card,
+        tonalElevation = 0.dp,
     )
 }
 
 /**
- * When showRadio is true, displays RadioButton (single selection mode);
- * otherwise, plain clickable list mode.
- * The selectedOption parameter is used to highlight the selected item only when showRadio is true.
+ * A list of options in a dialog.
+ *
+ * When [showRadio] is true the options are single-choice and [selectedOption] is marked with a
+ * radio; otherwise the list is a plain menu of actions. Either way one row is one focusable node:
+ * the radio is decorative, so TalkBack announces the option and its selection once.
  */
 @Composable
 fun <T> SelectListDialog(
@@ -214,36 +291,51 @@ fun <T> SelectListDialog(
     selectedOption: T? = null,
     showRadio: Boolean = false
 ) {
+    val card = frostCardColors()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = title?.let { { Text(it) } },
+        title = title?.let {
+            {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = card.content,
+                )
+            }
+        },
         text = {
-            LazyColumn {
+            LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
                 items(options) { option ->
                     val isSelected = option == selectedOption
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(FrostRadius.tile)
                             .then(
                                 if (showRadio) Modifier.selectable(
                                     selected = isSelected,
                                     onClick = { onSelected(option) },
                                     role = Role.RadioButton
-                                ) else Modifier.clickable { onSelected(option) }
+                                ) else Modifier.clickable(role = Role.Button) { onSelected(option) }
                             )
-                            .padding(vertical = 12.dp, horizontal = 4.dp),
+                            .padding(vertical = FrostSpacing.m, horizontal = FrostSpacing.s),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (showRadio) {
                             RadioButton(
                                 selected = isSelected,
-                                onClick = null
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = MaterialTheme.colorScheme.primary,
+                                    unselectedColor = MaterialTheme.colorScheme.outline,
+                                ),
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(FrostSpacing.m))
                         }
                         Text(
                             text = optionText(option),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = card.content,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -252,10 +344,12 @@ fun <T> SelectListDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
+            DialogAction(label = stringResource(R.string.action_cancel), onClick = onDismiss)
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = card.container,
+        textContentColor = card.content,
+        titleContentColor = card.content,
+        shape = FrostRadius.card,
+        tonalElevation = 0.dp,
     )
 }

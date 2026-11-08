@@ -5,20 +5,22 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,10 +32,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,8 +48,12 @@ import com.v2ray.ang.R
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
-import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
+import com.v2ray.ang.ui.compose.FrostCardGroup
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostSurface
+import com.v2ray.ang.ui.compose.frostRaisedColors
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -140,8 +149,12 @@ fun LogcatScreen(
 
     val listState = rememberLazyListState()
 
+    val refreshLabel = stringResource(R.string.acc_refresh_log)
+    // The log list is the page: it gets a real surface and its own padding instead of depending on
+    // whatever the window happened to paint behind it.
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_logcat),
@@ -190,17 +203,6 @@ fun LogcatScreen(
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.loadLogcat() },
-                modifier = Modifier.navigationBarsPadding()
-            ) {
-                Icon(
-                    painterResource(R.drawable.ic_restore_24dp),
-                    contentDescription = stringResource(R.string.acc_refresh)
-                )
-            }
         }
     ) { innerPadding ->
         Column(
@@ -213,17 +215,78 @@ fun LogcatScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScrollbar(listState),
-                contentPadding = NavigationBarsBottomPadding()
+                contentPadding = PaddingValues(
+                    start = FrostSpacing.s,
+                    end = FrostSpacing.s,
+                    top = FrostSpacing.s,
+                    bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+                ),
+                verticalArrangement = Arrangement.spacedBy(FrostSpacing.xs),
             ) {
+                if (logs.isEmpty()) {
+                    item(key = "empty") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = FrostSpacing.xxl),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.frost_empty_list),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
                 items(items = logs, key = { it.key }) { log ->
                     LogcatItem(log = log.text, onLongClick = { Utils.setClipboard(context, log.text) })
-                    ItemDivider()
+                }
+                // The refresh action used to be a floating button over the list; it now sits at the
+                // end of the list as a full-width tile, so it never covers the line being read.
+                item(key = "refresh") {
+                    FrostSurface(
+                        colors = frostRaisedColors(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(FrostRadius.tile),
+                        shape = FrostRadius.tile,
+                    ) {
+                        // A full-width action tile: the label names it, the glyph is decorative.
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(onClickLabel = refreshLabel, role = Role.Button) {
+                                    viewModel.loadLogcat()
+                                }
+                                .padding(vertical = FrostSpacing.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_restore_24dp),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = refreshLabel,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(start = FrostSpacing.xs),
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+/**
+ * One log line: the tag above the message.
+ *
+ * A long press copies the line (the existing behaviour) and a tap does nothing, so the row declares
+ * its copy action by name instead of leaving TalkBack with two anonymous text nodes.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LogcatItem(log: String, onLongClick: () -> Unit) {
@@ -235,17 +298,33 @@ private fun LogcatItem(log: String, onLongClick: () -> Unit) {
         val contentPart = if (parts.size > 1) parts.last().trim() else ""
         tagPart to contentPart
     }
+    val copyLabel = stringResource(R.string.acc_copy_log)
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(onClick = {}, onLongClick = onLongClick)
-            .padding(8.dp)
-    ) {
-        Text(text = tag, style = MaterialTheme.typography.bodySmall)
-        if (content.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = content, style = MaterialTheme.typography.bodySmall)
+    FrostCardGroup {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    role = Role.Button,
+                    onClickLabel = copyLabel,
+                    onLongClickLabel = copyLabel,
+                    onClick = onLongClick,
+                    onLongClick = onLongClick,
+                )
+                .padding(FrostSpacing.l)
+        ) {
+            Text(
+                text = tag,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (content.isNotEmpty()) {
+                Text(
+                    text = content,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = FrostSpacing.xs),
+                )
+            }
         }
     }
 }

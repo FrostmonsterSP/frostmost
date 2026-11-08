@@ -28,9 +28,25 @@ class ServerHysteria2Activity : BaseServerActivity() {
             title = serverConfigType.toString(),
             onSaveClick = { saveServer(uiState) }
         ) {
-            CommonBasicFields(uiState)
-            Hysteria2ProtocolFields(uiState)
-
+            EditorSection(stringResource(R.string.server_section_main)) {
+                CommonBasicFields(uiState)
+            }
+            EditorSection(stringResource(R.string.server_section_protocol)) {
+                Hysteria2ProtocolFields(uiState)
+            }
+            EditorSection(stringResource(R.string.server_section_transport)) {
+                Hysteria2TransportFields(uiState)
+            }
+            EditorSection(stringResource(R.string.server_section_security)) {
+                Hysteria2SecurityFields(uiState)
+            }
+            EditorSection(stringResource(R.string.server_section_extra)) {
+                FormTextField(
+                    stringResource(R.string.server_lab_final_mask),
+                    uiState.finalMask,
+                    { uiState.finalMask = it }
+                )
+            }
         }
     }
 
@@ -50,13 +66,22 @@ class ServerHysteria2Activity : BaseServerActivity() {
             label = stringResource(R.string.server_lab_id3),
             value = state.password,
             onValueChange = { state.password = it },
-            isError = state.isPasswordError
+            isError = state.isPasswordError,
+            supportingText = if (state.isPasswordError) {
+                stringResource(R.string.server_field_required)
+            } else {
+                null
+            }
         )
         FormTextField(
             stringResource(R.string.server_obfs_password),
             state.obfsPassword,
             { state.obfsPassword = it }
         )
+    }
+
+    @Composable
+    private fun Hysteria2TransportFields(state: ServerUiState) {
         FormTextField(
             stringResource(R.string.server_lab_port_hop),
             state.portHopping,
@@ -77,7 +102,10 @@ class ServerHysteria2Activity : BaseServerActivity() {
             state.bandwidthUp,
             { state.bandwidthUp = it }
         )
+    }
 
+    @Composable
+    private fun Hysteria2SecurityFields(state: ServerUiState) {
         SettingsSwitchItem(
             title = stringResource(R.string.server_lab_allow_insecure),
             checked = state.allowInsecure,
@@ -98,12 +126,5 @@ class ServerHysteria2Activity : BaseServerActivity() {
             state.pinnedCA256,
             { state.pinnedCA256 = it }
         )
-
-        FormTextField(
-            stringResource(R.string.server_lab_final_mask),
-            state.finalMask,
-            { state.finalMask = it }
-        )
     }
 }
-

@@ -3,7 +3,15 @@ package com.v2ray.ang.ui.main
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.entities.SubscriptionCache
 
-/** Pure model of the home screen; no Android or Compose dependencies. Identity is by group id / server GUID only. */
+/**
+ * Pure model of the home screen; no Android or Compose dependencies. Identity is by group id /
+ * server GUID only.
+ *
+ * The one exception is the accent colour: [ACCENT_ON_PAGE] and [ACCENT_ON_PAGE_MUTED] are Compose
+ * `Color` values. They are constants of the scheme rather than a theme lookup, so the only thing a
+ * JVM test needs to read them is `toArgb()`, which does not touch the Android framework. Keeping
+ * the pair here lets the screen and the contrast tests share one definition of `on-accent`.
+ */
 internal data class HomeCard(
     val id: String,
     val name: String,
@@ -38,7 +46,7 @@ internal fun buildHomeCards(
     nowMillis: Long,
 ): List<HomeCard> = groups
     .filter { it.id != ALL_GROUP_ID }
-    .map { group ->
+    .mapIndexed { index, group ->
         val isManual = urls[group.id].isNullOrEmpty()
         HomeCard(
             id = group.id,
@@ -46,7 +54,7 @@ internal fun buildHomeCards(
             info = if (isManual) null else group.usageInfo?.let { buildSubscriptionInfoUiModel(it, nowMillis) },
             isManual = isManual,
             announce = if (isManual) null else group.usageInfo?.announce,
-            accent = accentFor(group.id),
+            accent = accentFor(index),
         )
     }
 
@@ -147,27 +155,45 @@ internal fun shouldShowFirstRun(cards: List<HomeCard>, serverCount: Int): Boolea
 /**
  * Subscription colors, light theme. Every entry keeps white text at 4.5:1 or better, also over the
  * [HOME_ON_ACCENT_OVERLAY] scrim and over anything the sheet scrim can leave of the accent.
+ *
+ * The palette was re-picked around an equal readable distance instead of around darkness: the
+ * previous wine `#8C1D40` and bronze `#7A4A00` were the heaviest tones and read as "alarm" rather
+ * than as the identity of an ordinary subscription. Each entry now sits at the same point of the
+ * white-on-accent scale (6.5:1), so no accent shouts louder than another and the hue alone carries
+ * the difference.
+ *
+ * Brightness has a hard ceiling here and it is not a taste call. WCAG's sRGB switch sits at channel
+ * value 10/255, so a lighter pastel (a rose-400 or amber-400 tone) drops white text below 4.5:1 on
+ * its own hue — measured 3.26:1 for that attempt. The lever that does work is hue and saturation at a
+ * fixed contrast distance, and that is what these values use.
+ *
+ * Worst case over both palettes and both backgrounds (bare accent and the 10% overlay plate) is
+ * 4.93:1, up from 4.62:1 before, so the lightest accent here is still calmer than the darkest one
+ * used to be.
  */
 internal val HOME_ACCENTS: List<Long> = listOf(
-    0xFF2447C8, // blue
-    0xFF6B2A80, // purple
-    0xFF0E6A70, // teal
-    0xFF1F6B3A, // green
-    0xFF8C1D40, // wine
-    0xFF7A4A00, // bronze
+    0xFF3D57B2, // indigo
+    0xFF734B9D, // violet
+    0xFF1F676F, // teal
+    0xFF2C6944, // green
+    0xFF93435E, // rose
+    0xFF825228, // amber
 )
 
 /**
  * The same subscription colors for the dark theme: the light values are too dark to read as color on
  * a dark surface, these keep white text at 4.5:1 as well.
+ *
+ * Same hues as [HOME_ACCENTS], one step deeper: on the near-black dark surface the lighter light-theme
+ * values lose saturation against the accent page, which is why the dark entries keep more chroma.
  */
 internal val HOME_ACCENTS_DARK: List<Long> = listOf(
-    0xFF3556D6, // blue
-    0xFF853197, // purple
-    0xFF0C6E75, // teal
-    0xFF1E6B3C, // green
-    0xFFA1254C, // wine
-    0xFF8F5600, // bronze
+    0xFF3550B8, // indigo
+    0xFF6B4299, // violet
+    0xFF14606A, // teal
+    0xFF25603B, // green
+    0xFF8C3A55, // rose
+    0xFF7A4A18, // amber
 )
 
 /**
@@ -176,9 +202,137 @@ internal val HOME_ACCENTS_DARK: List<Long> = listOf(
  */
 internal const val HOME_ON_ACCENT_OVERLAY = 0.10f
 
-internal fun accentFor(id: String): Int = Math.floorMod(id.hashCode(), HOME_ACCENTS.size)
+/**
+ * Accent index of the group at [position] in the card list. The first (or only) subscription is
+ * always accent 0.
+ *
+ * It used to hash the group id, which made "the default accent" a lottery: one test subscription drew
+ * the wine tone and that became what the app looked like out of the box. Position is stable for a
+ * given `groups` order, and that order is the persisted subscription order, not the visible or
+ * selected card — so adding, removing, or switching cards cannot repaint an unrelated card.
+ *
+ * More subscriptions than colours wrap around ([Math.floorMod]), so the index never leaves the
+ * palette.
+ */
+internal fun accentFor(position: Int): Int = Math.floorMod(position, HOME_ACCENTS.size)
 
 /** Accent index [accent] as a color, in the palette of the current theme. */
 internal fun accentColor(accent: Int, dark: Boolean): Long =
     if (dark) HOME_ACCENTS_DARK[Math.floorMod(accent, HOME_ACCENTS_DARK.size)]
     else HOME_ACCENTS[Math.floorMod(accent, HOME_ACCENTS.size)]
+
+// ---------- Accent page ----------
+
+/** `on-accent`: the foreground of anything drawn on a subscription accent. */
+internal val ACCENT_ON_PAGE = androidx.compose.ui.graphics.Color.White
+
+/**
+ * `on-accent-muted`: the second line on an accent. 0.96 clears 4.5:1 on both backgrounds the line is
+ * drawn on — the bare accent (6.15:1 at its worst, teal in the light palette) and the 10% overlay
+ * plate a tile below the card paints (4.93:1 at its worst, violet in the light palette).
+ *
+ * Two published values were measured against the accent alone and are not enough here: the
+ * scheme's 0.88 drops to 4.17:1 once the plate is behind it, and [FROST_MUTED_ALPHA]'s 0.72 is
+ * measured against neutral surfaces and reaches only 3.92:1 on the old dark teal at all. 0.94 sits on
+ * the limit exactly (4.50:1) and flips over a one-unit rounding, so this takes the step above it.
+ *
+ * `HomeModelsTest.everyTextOnTheAccentedPageStaysReadable` holds this number in place; lowering it
+ * fails that test at the exact accent it breaks on.
+ */
+internal val ACCENT_ON_PAGE_MUTED = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.96f)
+
+/**
+ * Whether the whole page — not just the hero card — is painted with the subscription accent.
+ *
+ * One flag for the entire tree: the page background, the blocks below the card and the status-bar
+ * icons all read this, so a block can never be drawn on the wrong background. When it is false the
+ * page keeps the scheme's own pair and nothing visible changes.
+ */
+internal data class HomeAccentPage(
+    val onAccent: Boolean,
+    /** The accent that fills the page, or null when the page keeps the scheme's background. */
+    val accent: androidx.compose.ui.graphics.Color?,
+    /** `on-accent`, or null when the page is not accented. */
+    val content: androidx.compose.ui.graphics.Color?,
+    /** `on-accent-muted`, or null when the page is not accented. */
+    val muted: androidx.compose.ui.graphics.Color?,
+)
+
+/**
+ * The page accent of one card. A connected VPN fills the whole page with the accent of the
+ * subscription on screen: the accent is the identity of that subscription and the page already
+ * shows nothing else it could tint.
+ *
+ * The accent arrives as a [androidx.compose.ui.graphics.Color], never as a packed Long: `Color.value`
+ * is the colour's **float bits**, so `Color(color.value.toLong())` rebuilds a colour whose alpha
+ * byte is that float's exponent (0x4F for every entry of the palette, about 31%) instead of 0xFF.
+ * That turned the accent page into a near-transparent wash over the neutral background, which is
+ * why a connected VPN left the page looking unaccented. Keep the type; do not add a Long overload.
+ */
+internal fun homeAccentPage(
+    accent: androidx.compose.ui.graphics.Color,
+    connected: Boolean,
+): HomeAccentPage =
+    if (!connected) HomeAccentPage(onAccent = false, accent = null, content = null, muted = null)
+    else HomeAccentPage(
+        onAccent = true,
+        accent = accent,
+        content = ACCENT_ON_PAGE,
+        muted = ACCENT_ON_PAGE_MUTED,
+    )
+
+/**
+ * Whether the hero card's power target can start a connection now. A start from "off" is already in
+ * flight ([powerEnabled] false), and a second start would queue a duplicate behind the first.
+ *
+ * This is the guard the whole-card tap goes through. The card is one focusable node, so the UI
+ * cannot hide the second tap the way a disabled button would hide it; the action itself has to be
+ * the one that refuses it.
+ */
+internal fun canStartFromOff(isRunning: Boolean, connecting: Boolean, powerEnabled: Boolean): Boolean =
+    isRunning || (powerEnabled && !connecting)
+
+/**
+ * Whether the card's single toggle node reports itself as on: a VPN that is running, or one being
+ * started or switched. `HomeStatus.CONNECTED` alone would drop the on-state during a switch, and
+ * `HomeStatus.FAILED` can sit on top of a VPN that is still up (an unreachable server).
+ */
+internal fun heroSwitchOn(isRunning: Boolean, switching: Boolean): Boolean = isRunning || switching
+
+/**
+ * Whether the round power control still acts on its own. It does not any more: the whole card is
+ * the only toggle target, and the circle only shows the state. Kept as a named constant so the
+ * next reader does not re-attach a click to it while adding sense to the control.
+ *
+ * The region below the state panel is not covered either: its status label travels in a chip with
+ * its own background, so it needs no tap handling of its own.
+ */
+internal const val HERO_POWER_IS_INDICATOR_ONLY = true
+
+/** What the hero card shows about the connection; built by the screen from the UI state. */
+internal data class HomeConnection(
+    val status: HomeStatus,
+    /** Selected server name and, when connected and measured, its delay; null when no server is resolved. */
+    val serverName: String?,
+    val delayMillis: Long?,
+    val isRunning: Boolean,
+    /** A start from "off" is in flight: the card cannot start a second one, so it waits for the result. */
+    val powerEnabled: Boolean,
+    /**
+     * A start is in flight. [status] already reads CONNECTING for it, but the status also reflects
+     * an undo window and an unreachable server, so the refusal of a repeat start reads this field
+     * instead of inferring it.
+     */
+    val isConnecting: Boolean,
+)
+
+/** String resource naming a routing preset; null is the "custom rules" state. */
+@androidx.annotation.StringRes
+internal fun routingPresetLabelRes(preset: com.v2ray.ang.enums.RoutingType?): Int = when (preset) {
+    com.v2ray.ang.enums.RoutingType.GLOBAL -> com.v2ray.ang.R.string.home_rules_global
+    com.v2ray.ang.enums.RoutingType.WHITE_RUSSIA -> com.v2ray.ang.R.string.home_rules_russia
+    com.v2ray.ang.enums.RoutingType.WHITE_IRAN -> com.v2ray.ang.R.string.home_rules_iran
+    com.v2ray.ang.enums.RoutingType.WHITE -> com.v2ray.ang.R.string.home_rules_china_white
+    com.v2ray.ang.enums.RoutingType.BLACK -> com.v2ray.ang.R.string.home_rules_china_black
+    null -> com.v2ray.ang.R.string.home_rules_custom
+}

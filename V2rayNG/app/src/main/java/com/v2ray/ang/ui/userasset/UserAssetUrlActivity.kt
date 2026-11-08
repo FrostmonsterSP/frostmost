@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.AssetUrlItem
@@ -32,7 +31,9 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormTextField
+import com.v2ray.ang.ui.compose.FrostSpacing
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import java.io.File
@@ -145,6 +146,7 @@ fun UserAssetUrlScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_user_asset_add_url),
@@ -186,7 +188,7 @@ fun UserAssetUrlScreen(
                 .consumeWindowInsets(innerPadding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 8.dp)
+                .padding(vertical = FrostSpacing.s)
         ) {
             FormTextField(
                 label = stringResource(R.string.sub_setting_remarks),

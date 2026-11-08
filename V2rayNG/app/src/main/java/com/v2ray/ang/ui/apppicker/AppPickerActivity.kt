@@ -6,8 +6,10 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,9 +27,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.AppInfo
@@ -34,8 +39,10 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.AppListItem
 import com.v2ray.ang.ui.compose.AppTopBar
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
 import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.verticalScrollbar
 
 private enum class AppPickerMenuAction(@StringRes val labelRes: Int) {
@@ -129,6 +136,7 @@ fun AppPickerScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = title,
@@ -159,13 +167,15 @@ fun AppPickerScreen(
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 painterResource(R.drawable.ic_more_vert_24dp),
-                                contentDescription = null
+                                contentDescription = stringResource(R.string.acc_more)
                             )
                         }
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            shape = FrostRadius.card,
+                            tonalElevation = 0.dp,
                         ) {
                             AppDropdownMenuItems(AppPickerMenuAction.entries, { it.labelRes }) { action ->
                                 showMenu = false
@@ -186,8 +196,18 @@ fun AppPickerScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScrollbar(listState),
-            contentPadding = NavigationBarsBottomPadding()
+            contentPadding = PaddingValues(
+                start = FrostSpacing.s,
+                end = FrostSpacing.s,
+                top = FrostSpacing.s,
+                bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+            ),
         ) {
+            if (apps.isEmpty()) {
+                item(key = "empty") {
+                    EmptyListNote()
+                }
+            }
             items(items = apps, key = { it.packageName }) { app ->
                 val checked = selectedPackages.contains(app.packageName)
                 AppListItem(
@@ -200,5 +220,22 @@ fun AppPickerScreen(
                 ItemDivider()
             }
         }
+    }
+}
+
+/** One quiet line instead of a blank page, so an empty search result says what it is. */
+@Composable
+internal fun EmptyListNote(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = FrostSpacing.xxl),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.frost_empty_list),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

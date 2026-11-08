@@ -20,6 +20,7 @@ import androidx.camera.viewfinder.core.ImplementationMode
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,7 +29,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,12 +46,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -67,6 +75,13 @@ import com.v2ray.ang.enums.PermissionType
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.ui.base.HelperBaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.LocalDarkTheme
+import com.v2ray.ang.ui.compose.frostPageColors
+import com.v2ray.ang.ui.compose.scannerFrameDark
+import com.v2ray.ang.ui.compose.scannerFrameLight
+import com.v2ray.ang.ui.compose.scannerScrim
+import com.v2ray.ang.ui.compose.snackbarText
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.QRCodeDecoder
 import java.nio.ByteBuffer
@@ -156,6 +171,7 @@ fun ScannerScreen(
 
     Scaffold(
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.menu_item_import_config_qrcode),
@@ -238,35 +254,47 @@ fun ScannerScreen(
     }
 }
 
+/**
+ * What the screen shows before the camera is allowed: one tap target that starts the scan.
+ *
+ * The whole plate is the button, so the hint "tap the screen" is true for the entire screen; the
+ * glyph inside it is decorative and the text block is merged into the single action's name.
+ */
 @Composable
 private fun ScannerIdlePlaceholder(onStartClick: () -> Unit) {
-    Box(
+    val startLabel = stringResource(R.string.acc_start_scanner)
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .pointerInput(Unit) { detectTapGestures { onStartClick() } },
-        contentAlignment = Alignment.Center
+            .pointerInput(Unit) { detectTapGestures { onStartClick() } }
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                onClick(label = startLabel) { onStartClick(); true }
+            }
+            .padding(FrostSpacing.screenH),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                painter = painterResource(R.drawable.ic_scan_24dp),
-                contentDescription = stringResource(R.string.acc_start_scanner),
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.menu_item_scan_qrcode),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.summary_scan_qrcode),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Icon(
+            painter = painterResource(R.drawable.ic_scan_24dp),
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(FrostSpacing.m))
+        Text(
+            text = stringResource(R.string.menu_item_scan_qrcode),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(FrostSpacing.xs))
+        Text(
+            text = stringResource(R.string.summary_scan_qrcode),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -275,7 +303,8 @@ fun ScannerOverlay() {
     val scanBoxSize = 250.dp
     val cornerLength = 24.dp
     val cornerWidth = 3.dp
-    val cornerColor = Color(0xFF4CAF50)
+    // Scheme tokens instead of literals: the frame follows the theme like every other surface.
+    val cornerColor = if (LocalDarkTheme.current) scannerFrameDark else scannerFrameLight
 
     Box(modifier = Modifier.fillMaxSize()) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -284,7 +313,9 @@ fun ScannerOverlay() {
             val boxSizePx = scanBoxSize.toPx()
             val left = (canvasWidth - boxSizePx) / 2f
             val top = (canvasHeight - boxSizePx) / 2f
-            drawRect(color = Color(0x80000000))
+            // The frame sits on the live camera image, so both tones are fixed scheme tokens rather
+            // than page colours: the scrim dims the preview, the frame marks the area to fill.
+            drawRect(color = scannerScrim)
             drawRect(
                 color = Color.Transparent,
                 topLeft = Offset(left, top),
@@ -306,28 +337,55 @@ fun ScannerOverlay() {
                 Box(
                     modifier = Modifier
                         .align(align)
-                        .width(cornerLength)
-                        .height(cornerWidth)
-                        .background(cornerColor)
-                )
-                Box(
-                    modifier = Modifier
-                        .align(align)
-                        .width(cornerWidth)
-                        .height(cornerLength)
-                        .background(cornerColor)
+                        .size(cornerLength)
+                        .drawBehindCorners(align, cornerColor, cornerWidth, cornerLength)
                 )
             }
         }
         Text(
             text = stringResource(R.string.menu_item_scan_qrcode),
-            color = Color.White,
+            // The caption sits over the live camera image, so it takes the one colour the scheme
+            // fixes for white-on-dark: the snackbar foreground.
+            color = snackbarText,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .align(Alignment.Center)
-                .offset(y = scanBoxSize / 2 + 24.dp)
+                .offset(y = scanBoxSize / 2 + FrostSpacing.l)
         )
     }
+}
+
+/**
+ * One corner mark drawn as an L-shaped stroke. Two filled rectangles per corner leave a seam where
+ * they meet; two stroked lines with a round cap do not.
+ */
+private fun Modifier.drawBehindCorners(
+    align: Alignment,
+    color: Color,
+    strokeWidth: Dp,
+    length: Dp,
+): Modifier = this.drawBehind {
+    val w = strokeWidth.toPx()
+    val len = length.toPx()
+    val half = w / 2f
+    val startX = if (align == Alignment.TopStart || align == Alignment.BottomStart) half else size.width - half
+    val endX = if (align == Alignment.TopStart || align == Alignment.BottomStart) half + len else size.width - half - len
+    val startY = if (align == Alignment.TopStart || align == Alignment.TopEnd) half else size.height - half
+    val endY = if (align == Alignment.TopStart || align == Alignment.TopEnd) half + len else size.height - half - len
+    drawLine(
+        color = color,
+        start = Offset(startX, startY),
+        end = Offset(endX, startY),
+        strokeWidth = w,
+        cap = StrokeCap.Round,
+    )
+    drawLine(
+        color = color,
+        start = Offset(startX, startY),
+        end = Offset(startX, endY),
+        strokeWidth = w,
+        cap = StrokeCap.Round,
+    )
 }
 
 @Composable

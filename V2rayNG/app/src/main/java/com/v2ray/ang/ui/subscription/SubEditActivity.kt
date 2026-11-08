@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
@@ -40,7 +39,9 @@ import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
+import com.v2ray.ang.ui.compose.FrostSpacing
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
@@ -160,6 +161,7 @@ fun SubEditScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_sub_setting),
@@ -202,8 +204,7 @@ fun SubEditScreen(
                 .imePadding()
                 .verticalScroll(scrollState)
                 .verticalScrollbar(scrollState)
-                .padding(vertical = 8.dp)
-                .padding(bottom = 36.dp)
+                .padding(top = FrostSpacing.s, bottom = FrostSpacing.xl)
         ) {
             FormTextField(
                 label = stringResource(R.string.sub_setting_remarks),

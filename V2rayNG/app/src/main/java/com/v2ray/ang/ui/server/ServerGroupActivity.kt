@@ -1,11 +1,14 @@
 package com.v2ray.ang.ui.server
 
 import android.os.Bundle
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.RectangleShape
 import com.v2ray.ang.AppConfig.BUILTIN_OUTBOUND_TAGS
 import com.v2ray.ang.AppConfig.TAG_PROXY
 import com.v2ray.ang.R
@@ -39,8 +42,14 @@ import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
-import com.v2ray.ang.ui.compose.NavigationBarsSpacer
+import com.v2ray.ang.ui.compose.FrostElevation
+import com.v2ray.ang.ui.compose.FrostFormSection
+import com.v2ray.ang.ui.compose.FrostPrimaryButton
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostSurface
+import com.v2ray.ang.ui.compose.FrostTextButton
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
+import com.v2ray.ang.ui.compose.frostCardColors
 
 class ServerGroupActivity : BaseComponentActivity() {
 
@@ -237,6 +246,17 @@ fun ServerGroupScreen(
     val selectedType = typeEntries.indexOf(typeValue).coerceAtLeast(0).toString()
     val supportsObservatory = BalancerStrategyType.from(selectedType).supportsObservatory
 
+    val onSaveClick = {
+        val remarksErr = remarks.isBlank()
+        isRemarksError = remarksErr
+
+        if (!remarksErr) {
+            val typeIdx = typeEntries.indexOf(typeValue).coerceAtLeast(0)
+            val subIdx = subDisplay.indexOf(subValue).coerceAtLeast(0)
+            onSave(remarks, filter, typeIdx, subIdx, testOutbounds, fallbackTag)
+        }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -249,21 +269,45 @@ fun ServerGroupScreen(
                             Icon(painterResource(R.drawable.ic_delete_24dp), contentDescription = stringResource(R.string.acc_delete))
                         }
                     }
-                    IconButton(onClick = {
-                        val remarksErr = remarks.isBlank()
-                        isRemarksError = remarksErr
-
-                        val hasError = remarksErr
-                        if (!hasError) {
-                            val typeIdx = typeEntries.indexOf(typeValue).coerceAtLeast(0)
-                            val subIdx = subDisplay.indexOf(subValue).coerceAtLeast(0)
-                            onSave(remarks, filter, typeIdx, subIdx, testOutbounds, fallbackTag)
-                        }
-                    }) {
-                        Icon(painterResource(R.drawable.ic_fab_check), contentDescription = stringResource(R.string.acc_save))
-                    }
                 }
             )
+        },
+        bottomBar = {
+            // Same plate as the protocol editors: one filled action, the page edge as the shape.
+            FrostSurface(
+                colors = frostCardColors(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                shape = RectangleShape,
+                elevation = FrostElevation.card,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = FrostSpacing.screenH,
+                            end = FrostSpacing.screenH,
+                            top = FrostSpacing.m,
+                            bottom = FrostSpacing.m,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
+                ) {
+                    FrostPrimaryButton(
+                        label = stringResource(R.string.acc_save),
+                        onClick = onSaveClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = painterResource(R.drawable.ic_fab_check),
+                    )
+                    if (showDelete) {
+                        FrostTextButton(
+                            label = stringResource(R.string.acc_delete),
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         Column(
@@ -271,45 +315,61 @@ fun ServerGroupScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
-                .imePadding()
-                .padding(vertical = 8.dp)
-                .verticalScroll(rememberScrollState())
+                .imePadding(),
         ) {
-            FormTextField(
-                label = stringResource(R.string.server_lab_remarks),
-                value = remarks,
-                onValueChange = { remarks = it },
-                isError = isRemarksError
-            )
-            FormDropdownField(
-                label = stringResource(R.string.title_policy_group_type),
-                value = typeValue,
-                options = typeEntries,
-                onValueChange = { typeValue = it }
-            )
-            FormDropdownField(
-                label = stringResource(R.string.title_policy_group_subscription_id),
-                value = subValue,
-                options = subDisplay,
-                onValueChange = { subValue = it }
-            )
-            FormTextField(stringResource(R.string.title_policy_group_subscription_filter), filter, { filter = it })
-            if (supportsObservatory) {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.title_policy_group_test_outbounds),
-                    checked = testOutbounds,
-                    onCheckedChange = { testOutbounds = it }
-                )
-                if (testOutbounds) {
-                    FormDropdownField(
-                        label = stringResource(R.string.title_policy_group_fallback),
-                        value = fallbackTag,
-                        options = fallbackSuggestions,
-                        onValueChange = { fallbackTag = it },
-                        editable = true
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = FrostSpacing.screenH)
+                    .padding(top = FrostSpacing.l, bottom = FrostSpacing.xl),
+                verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap)
+            ) {
+                FrostFormSection(title = stringResource(R.string.server_section_main)) {
+                    FormTextField(
+                        label = stringResource(R.string.server_lab_remarks),
+                        value = remarks,
+                        onValueChange = { remarks = it },
+                        isError = isRemarksError,
+                        supportingText = if (isRemarksError) {
+                            stringResource(R.string.server_field_required)
+                        } else {
+                            null
+                        }
                     )
+                    FormDropdownField(
+                        label = stringResource(R.string.title_policy_group_type),
+                        value = typeValue,
+                        options = typeEntries,
+                        onValueChange = { typeValue = it }
+                    )
+                    FormDropdownField(
+                        label = stringResource(R.string.title_policy_group_subscription_id),
+                        value = subValue,
+                        options = subDisplay,
+                        onValueChange = { subValue = it }
+                    )
+                    FormTextField(stringResource(R.string.title_policy_group_subscription_filter), filter, { filter = it })
                 }
-                NavigationBarsSpacer()
+                if (supportsObservatory) {
+                    FrostFormSection(title = stringResource(R.string.title_policy_group_test_outbounds)) {
+                        SettingsSwitchItem(
+                            title = stringResource(R.string.title_policy_group_test_outbounds),
+                            checked = testOutbounds,
+                            onCheckedChange = { testOutbounds = it }
+                        )
+                        if (testOutbounds) {
+                            FormDropdownField(
+                                label = stringResource(R.string.title_policy_group_fallback),
+                                value = fallbackTag,
+                                options = fallbackSuggestions,
+                                onValueChange = { fallbackTag = it },
+                                editable = true
+                            )
+                        }
+                    }
+                }
             }
         }
     }

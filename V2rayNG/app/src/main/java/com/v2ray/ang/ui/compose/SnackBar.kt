@@ -176,11 +176,13 @@ fun AppSnackbarHost(
             val type = (data.visuals as? AppSnackbarVisuals)?.type ?: ToastType.NORMAL
 
             val isDark = LocalDarkTheme.current
+            // Each pairing carries white text at 5.08:1 or better in both themes. The old 85%
+            // translucent colours did not: the green reached only 3.23:1 on a light page.
             val bgColor = when (type) {
-                ToastType.NORMAL -> if (isDark) toastNormalBgDark else toastNormalBgLight
-                ToastType.SUCCESS -> toastSuccessBg
-                ToastType.ERROR -> toastErrorBg
-                ToastType.INFO -> toastInfoBg
+                ToastType.NORMAL -> if (isDark) snackbarNeutralDark else snackbarNeutralLight
+                ToastType.SUCCESS -> if (isDark) snackbarSuccessDark else snackbarSuccessLight
+                ToastType.ERROR -> if (isDark) snackbarErrorDark else snackbarErrorLight
+                ToastType.INFO -> if (isDark) snackbarInfoDark else snackbarInfoLight
             }
 
             Box(
@@ -207,7 +209,7 @@ fun AppSnackbarHost(
                     ) {
                         Text(
                             text = data.visuals.message,
-                            color = toastTextColor,
+                            color = snackbarText,
                             fontSize = 14.sp,
                             maxLines = ToastMaxLines,
                             overflow = TextOverflow.Ellipsis,

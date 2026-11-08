@@ -555,6 +555,9 @@
     <string name="acc_save">Сохранить</string>
     <string name="acc_update_subscriptions">Обновить подписки</string>
     <string name="acc_per_app_proxy_information">Сведения о прокси для приложений</string>
+    <string name="acc_per_app_proxy_status">Состояние прокси для приложений</string>
+    <string name="settings_section_expand">Развернуть раздел</string>
+    <string name="settings_section_collapse">Свернуть раздел</string>
     <string name="permission_camera">Камера</string>
     <string name="permission_notification">Уведомления</string>
     <string name="permission_local_network">Локальная сеть</string>
@@ -630,10 +633,8 @@
     <string name="home_server_actions_named">Действия для «%1$s»</string>
     <string name="home_servers_empty">В этой подписке нет серверов</string>
     <string name="home_server_ping_unknown">—</string>
-    <string name="home_restart_needs_vpn">Чтобы перезапустить, включите VPN</string>
     <string name="home_check">Проверить</string>
     <string name="home_check_stop">Остановить</string>
-    <string name="home_restart">Перезапустить</string>
     <string name="home_switching_to">Переключаюсь на «%1$s»</string>
     <string name="home_undo">Отменить</string>
     <string name="home_empty">Групп пока нет</string>
@@ -662,4 +663,37 @@
     <string name="home_import_downloading">Скачиваю подписку…</string>
     <string name="home_import_retry">Повторить</string>
     <string name="home_link_confirm">Добавить подписку «%1$s»?</string>
+    <string name="home_traffic_unlimited_short">Без лимита</string>
+    <string name="home_traffic_of_short">из %1$s</string>
+    <string name="home_manual_group">Ручная группа</string>
+
+    <!-- Заголовки разделов редакторов серверов (пересборка FrostMost) -->
+    <string name="server_section_main">Основное</string>
+    <string name="server_section_protocol">Протокол</string>
+    <string name="server_section_transport">Транспорт</string>
+    <string name="server_section_security">TLS</string>
+    <string name="server_section_extra">Дополнительно</string>
+    <string name="server_section_chain_members">Участники цепочки</string>
+    <string name="server_field_required">Поле обязательно для заполнения</string>
+
+    <!-- Общие элементы интерфейса пересборки FrostMost -->
+    <string name="acc_clear_search">Очистить поиск</string>
+    <string name="acc_select_app">Выбрать «%1$s»</string>
+    <string name="acc_deselect_app">Снять выбор с «%1$s»</string>
+    <string name="acc_refresh_log">Обновить журнал</string>
+    <string name="frost_empty_list">Здесь пока пусто</string>
+    <string name="home_search_servers">Поиск серверов</string>
+    <string name="home_search_clear">Очистить поиск</string>
+    <string name="acc_edit_rule_named">Изменить правило «%1$s»</string>
+    <string name="acc_enable_rule_named">Включить правило «%1$s»</string>
+    <string name="acc_disable_rule_named">Отключить правило «%1$s»</string>
+    <string name="acc_edit_subscription_named">Изменить подписку «%1$s»</string>
+    <string name="acc_delete_subscription_named">Удалить подписку «%1$s»</string>
+    <string name="acc_share_subscription_named">Поделиться подпиской «%1$s»</string>
+    <string name="acc_toggle_subscription_named">Включить подписку «%1$s»</string>
+    <string name="acc_open_profile">Открыть профиль «%1$s»</string>
+    <string name="acc_edit_asset_named">Изменить ресурс «%1$s»</string>
+    <string name="acc_delete_asset_named">Удалить ресурс «%1$s»</string>
+    <string name="frost_state_on">Включено</string>
+    <string name="frost_state_off">Выключено</string>
 </resources>

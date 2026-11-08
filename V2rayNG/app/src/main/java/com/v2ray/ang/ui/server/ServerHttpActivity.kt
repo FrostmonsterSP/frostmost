@@ -1,7 +1,6 @@
 package com.v2ray.ang.ui.server
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
 import com.v2ray.ang.R
@@ -14,7 +13,6 @@ class ServerHttpActivity : BaseServerActivity() {
 
     @Composable
     override fun ScreenContent() {
-        val scope = rememberCoroutineScope()
         val uiState = rememberSaveable(saver = ServerUiState.Saver) {
             ServerUiState.from(
                 initialConfig = initialConfig
@@ -27,9 +25,12 @@ class ServerHttpActivity : BaseServerActivity() {
             title = serverConfigType.toString(),
             onSaveClick = { saveServer(uiState) }
         ) {
-            CommonBasicFields(uiState)
-            HttpProtocolFields(uiState)
-
+            EditorSection(stringResource(R.string.server_section_main)) {
+                CommonBasicFields(uiState)
+            }
+            EditorSection(stringResource(R.string.server_section_protocol)) {
+                HttpProtocolFields(uiState)
+            }
         }
     }
 
@@ -43,7 +44,13 @@ class ServerHttpActivity : BaseServerActivity() {
         FormTextField(
             stringResource(R.string.server_lab_id4),
             state.password,
-            { state.password = it }
+            { state.password = it },
+            isError = state.isPasswordError,
+            supportingText = if (state.isPasswordError) {
+                stringResource(R.string.server_field_required)
+            } else {
+                null
+            }
         )
     }
 }

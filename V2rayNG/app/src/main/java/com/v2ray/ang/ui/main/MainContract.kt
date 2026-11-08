@@ -66,6 +66,13 @@ sealed interface MainAction {
     data object TestCurrentServer : MainAction
     data object TestAllServers : MainAction
     data object TestRealAllServers : MainAction
+    /**
+     * Measures the delay of the servers of [groupId]. The home screen's own Check button uses this
+     * form: the group it shows is not always the one the ViewModel has selected (a card can be shown
+     * while the stored selection still names another group), so the group has to travel with the
+     * action instead of being read from the selection afterwards.
+     */
+    data class TestGroupServers(val groupId: String) : MainAction
     data object CancelTesting : MainAction
     data object RemoveAllServers : MainAction
     data object RemoveDuplicateServers : MainAction

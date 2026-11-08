@@ -1,8 +1,8 @@
 package com.v2ray.ang.ui.main
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,15 +11,12 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -35,9 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.SubscriptionFailure
@@ -45,6 +39,11 @@ import com.v2ray.ang.enums.RoutingType
 import com.v2ray.ang.handler.ImportClassifier
 import com.v2ray.ang.handler.ImportKind
 import com.v2ray.ang.ui.compose.ConfirmDialog
+import com.v2ray.ang.ui.compose.FrostPrimaryButton
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSurface
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.frostInnerColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -82,8 +81,8 @@ internal fun HomeSheetHost(
         ModalBottomSheet(
             onDismissRequest = { onSheetChange(null) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            // Popups are deliberately not on the subscription color: the mockup keeps the accent on
-            // the card, and their fields and menus want the plain theme surface underneath.
+            // A modal sheet is never on the accent: the accent belongs to the hero card, and their
+            // fields and menus want the plain theme surface underneath.
             containerColor = MaterialTheme.colorScheme.surface,
         ) {
             // Close first, then act: the action may launch another activity.
@@ -123,28 +122,48 @@ internal fun HomeSheetHost(
 private fun SheetTitle(@StringRes title: Int) {
     Text(
         stringResource(title),
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier = Modifier.padding(start = FrostSpacing.xl, end = FrostSpacing.xl, top = FrostSpacing.s),
         style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.SemiBold,
     )
 }
 
-/** One activation target: the whole row is a single semantic node named by [label]. */
+/**
+ * One activation target: the whole row is a single semantic node named by its label. The block is a
+ * [FrostSurface], so its background and its text colour always come in one pair.
+ */
 @Composable
-private fun SheetRow(label: String, iconRes: Int? = null, onClick: () -> Unit) {
-    Row(
-        Modifier
+private fun SheetRow(
+    label: String,
+    iconRes: Int? = null,
+    onClick: () -> Unit,
+) {
+    val labelPaintsItself = iconRes == null
+    FrostSurface(
+        colors = frostInnerColors(),
+        modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = FrostSpacing.l, vertical = FrostSpacing.xxs),
+        shape = FrostRadius.tile,
+        onClick = onClick,
+        onClickLabel = label,
     ) {
-        if (iconRes != null) {
-            Icon(painterResource(iconRes), contentDescription = null, modifier = Modifier.size(24.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = FrostSpacing.touchTarget)
+                .padding(horizontal = FrostSpacing.l, vertical = FrostSpacing.s),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(FrostSpacing.l),
+        ) {
+            if (iconRes != null) {
+                Icon(painterResource(iconRes), contentDescription = null, modifier = Modifier.size(22.dp))
+            }
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = if (labelPaintsItself) 2 else 1,
+            )
         }
-        Text(label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -168,12 +187,13 @@ private fun AddSheetContent(draft: String?, failure: SubscriptionFailure?, onAct
         Modifier
             .verticalScroll(rememberScrollState())
             .imePadding()
-            .padding(bottom = 16.dp),
+            .padding(bottom = FrostSpacing.l),
+        verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
     ) {
         SheetTitle(R.string.home_add)
         Column(
-            Modifier.padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            Modifier.padding(horizontal = FrostSpacing.l),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
         ) {
             OutlinedTextField(
                 value = text,
@@ -202,11 +222,13 @@ private fun AddSheetContent(draft: String?, failure: SubscriptionFailure?, onAct
                     color = if (invalid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Button(
-                onClick = { onAction(MainAction.ApplyImport(text)) },
-                enabled = kind != null && kind != ImportKind.Invalid,
-                modifier = Modifier.align(Alignment.End),
-            ) { Text(stringResource(if (shownFailure != null) R.string.home_import_retry else R.string.home_add)) }
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                FrostPrimaryButton(
+                    label = stringResource(if (shownFailure != null) R.string.home_import_retry else R.string.home_add),
+                    onClick = { onAction(MainAction.ApplyImport(text)) },
+                    enabled = kind != null && kind != ImportKind.Invalid,
+                )
+            }
         }
         ImportMenuAction.entries.filter { !it.isManual }.forEach { item ->
             SheetRow(stringResource(item.labelRes)) { onAction(item.action) }
@@ -233,10 +255,12 @@ private fun MoreSheetContent(
     onAction: (MainAction) -> Unit,
     onNavigate: (MainDestination) -> Unit,
 ) {
+    var showOther by rememberSaveable { mutableStateOf(false) }
     Column(
         Modifier
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 16.dp),
+            .padding(bottom = FrostSpacing.l),
+        verticalArrangement = Arrangement.spacedBy(FrostSpacing.xxs),
     ) {
         SheetTitle(R.string.home_more)
         SheetRow(stringResource(R.string.home_update_all)) {
@@ -244,6 +268,13 @@ private fun MoreSheetContent(
         }
         HOME_MORE_ITEMS.forEach { destination ->
             SheetRow(stringResource(destination.labelRes), destination.iconRes) { onNavigate(destination) }
+        }
+        // The Add ways sit under "More" now that the configuration lives on the home screen itself.
+        SheetRow(stringResource(R.string.home_add_other)) { showOther = !showOther }
+        if (showOther) {
+            ImportMenuAction.entries.forEach { item ->
+                SheetRow(stringResource(item.labelRes)) { onAction(item.action) }
+            }
         }
     }
 }
@@ -258,7 +289,8 @@ private fun WaysSheetContent(
     Column(
         Modifier
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 16.dp),
+            .padding(bottom = FrostSpacing.l),
+        verticalArrangement = Arrangement.spacedBy(FrostSpacing.xxs),
     ) {
         SheetTitle(R.string.home_add_other)
         ImportMenuAction.entries.filter { !it.isManual && it != ImportMenuAction.Clipboard }.forEach { item ->

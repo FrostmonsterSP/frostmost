@@ -2,28 +2,24 @@ package com.v2ray.ang.ui.server
 
 import android.os.Bundle
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
@@ -50,6 +47,16 @@ import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
+import com.v2ray.ang.ui.compose.FrostChip
+import com.v2ray.ang.ui.compose.FrostElevation
+import com.v2ray.ang.ui.compose.FrostFormSection
+import com.v2ray.ang.ui.compose.FrostPrimaryButton
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostSurface
+import com.v2ray.ang.ui.compose.FrostTextButton
+import com.v2ray.ang.ui.compose.frostCardColors
+import com.v2ray.ang.ui.compose.frostInnerColors
 import com.v2ray.ang.ui.compose.reorderableDragHandle
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import sh.calvin.reorderable.ReorderableItem
@@ -221,6 +228,15 @@ fun ProxyChainScreen(
         }
     }
 
+    val onSaveClick = {
+        val remarksErr = remarks.isBlank()
+        isRemarksError = remarksErr
+
+        if (!remarksErr) {
+            onSave(remarks, members)
+        }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -233,31 +249,57 @@ fun ProxyChainScreen(
                             Icon(painterResource(R.drawable.ic_delete_24dp), contentDescription = stringResource(R.string.acc_delete))
                         }
                     }
-                    IconButton(onClick = {
-                        val remarksErr = remarks.isBlank()
-                        isRemarksError = remarksErr
-
-                        val hasError = remarksErr
-                        if (!hasError) {
-                            onSave(remarks, members)
-                        }
-                    }) {
-                        Icon(painterResource(R.drawable.ic_fab_check), contentDescription = stringResource(R.string.acc_save))
-                    }
                 }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    members = members + ""
-                    memberKeys = memberKeys + UUID.randomUUID().toString()
-                },
+        bottomBar = {
+            FrostSurface(
+                colors = frostCardColors(),
                 modifier = Modifier
-                    .offset(y = -20.dp)
-                    .navigationBarsPadding()
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                shape = RectangleShape,
+                elevation = FrostElevation.card,
             ) {
-                Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = stringResource(R.string.acc_add_member))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = FrostSpacing.screenH,
+                            end = FrostSpacing.screenH,
+                            top = FrostSpacing.m,
+                            bottom = FrostSpacing.m,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
+                ) {
+                    FrostPrimaryButton(
+                        label = stringResource(R.string.acc_save),
+                        onClick = onSaveClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = painterResource(R.drawable.ic_fab_check),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(FrostSpacing.s),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        FrostTextButton(
+                            label = stringResource(R.string.acc_add_member),
+                            onClick = {
+                                members = members + ""
+                                memberKeys = memberKeys + UUID.randomUUID().toString()
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (showDelete) {
+                            FrostTextButton(
+                                label = stringResource(R.string.acc_delete),
+                                onClick = { showProfileDeleteConfirm = true },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
             }
         }
     ) { innerPadding ->
@@ -270,46 +312,67 @@ fun ProxyChainScreen(
                 .imePadding()
                 .verticalScrollbar(lazyListState),
             contentPadding = PaddingValues(
-                top = 8.dp,
-                start = 16.dp,
-                end = 16.dp,
-                bottom = 36.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            )
+                start = FrostSpacing.screenH,
+                end = FrostSpacing.screenH,
+                top = FrostSpacing.l,
+                bottom = FrostSpacing.xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap),
         ) {
             item(key = "remarks_field") {
-                FormTextField(
-                    label = stringResource(R.string.server_lab_remarks),
-                    value = remarks,
-                    onValueChange = { remarks = it },
-                    isError = isRemarksError
-                )
+                FrostFormSection(title = stringResource(R.string.server_section_main)) {
+                    FormTextField(
+                        label = stringResource(R.string.server_lab_remarks),
+                        value = remarks,
+                        onValueChange = { remarks = it },
+                        isError = isRemarksError,
+                        supportingText = if (isRemarksError) {
+                            stringResource(R.string.server_field_required)
+                        } else {
+                            null
+                        }
+                    )
+                }
             }
 
-            item {
+            item(key = "members_header") {
                 Text(
-                    text = stringResource(R.string.server_proxy_chain_members),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+                    text = stringResource(R.string.server_section_chain_members),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = FrostSpacing.xs),
                 )
             }
 
             itemsIndexed(items = members, key = { index, _ -> memberKeys[index] }) { index, member ->
                 val memberKey = memberKeys[index]
                 ReorderableItem(reorderableState, key = memberKey) { isDragging ->
-                    val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
-                    Surface(shadowElevation = elevation) {
+                    val elevation by animateDpAsState(
+                        if (isDragging) FrostElevation.action else FrostElevation.card
+                    )
+                    FrostSurface(
+                        colors = frostInnerColors(),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = FrostRadius.inner,
+                        elevation = elevation,
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .then(with(this) { reorderableDragHandle() })
-                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                                .padding(
+                                    start = FrostSpacing.m,
+                                    end = FrostSpacing.xs,
+                                    top = FrostSpacing.xs,
+                                    bottom = FrostSpacing.xs,
+                                ),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                "${index + 1}",
-                                modifier = Modifier
-                                    .padding(start = 16.dp)
-                                    .width(10.dp)
+                            // The step number is the chain order, which is the whole meaning of the
+                            // number, so it stays visible next to the field rather than inside it.
+                            FrostChip(
+                                label = "${index + 1}",
+                                modifier = Modifier.padding(end = FrostSpacing.s),
                             )
                             FormDropdownField(
                                 label = stringResource(R.string.server_lab_remarks),

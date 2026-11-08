@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +32,10 @@ import com.v2ray.ang.dto.TranslatorsCredit
 import com.v2ray.ang.dto.TranslatorsParser
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
+import com.v2ray.ang.ui.compose.FrostCardGroup
+import com.v2ray.ang.ui.compose.FrostSpacing
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.util.Utils
 
 class TranslatorsActivity : BaseComponentActivity() {
@@ -58,6 +59,7 @@ fun TranslatorsScreen(onBackClick: () -> Unit) {
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_translators),
@@ -69,8 +71,13 @@ fun TranslatorsScreen(onBackClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(
+                start = FrostSpacing.screenH,
+                end = FrostSpacing.screenH,
+                top = FrostSpacing.s,
+                bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap)
         ) {
             items(credits, key = { it.language }) { credit ->
                 TranslationCreditCard(credit)
@@ -84,24 +91,24 @@ fun TranslatorsScreen(onBackClick: () -> Unit) {
 
 @Composable
 private fun TranslationCreditCard(credit: TranslatorsCredit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
+    FrostCardGroup {
         Column {
             Text(
                 text = credit.language,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                modifier = Modifier.padding(
+                    start = FrostSpacing.cardPadding,
+                    end = FrostSpacing.cardPadding,
+                    top = FrostSpacing.m,
+                    bottom = FrostSpacing.s,
+                )
             )
             credit.contributors.forEachIndexed { index, contributor ->
                 if (index > 0) {
                     HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
+                        modifier = Modifier.padding(horizontal = FrostSpacing.l),
                         color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 0.5.dp
+                        thickness = 1.dp
                     )
                 }
                 ContributorRow(
@@ -113,25 +120,36 @@ private fun TranslationCreditCard(credit: TranslatorsCredit) {
     }
 }
 
+/**
+ * One translator. A contributor with a link is a single focusable node whose label names the person;
+ * the GitHub glyph beside it is decorative, so the row is not announced twice.
+ */
 @Composable
 private fun ContributorRow(displayName: String, linkUrl: String?) {
     val context = LocalContext.current
     val isLink = linkUrl != null
+    val openLabel = stringResource(R.string.acc_open_profile, displayName)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (isLink) {
-                    Modifier.clickable(role = Role.Button) {
+                    Modifier.clickable(role = Role.Button, onClickLabel = openLabel) {
                         Utils.openUri(context, linkUrl)
                     }
                 } else {
                     Modifier
                 }
             )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(
+                start = FrostSpacing.cardPadding,
+                end = FrostSpacing.cardPadding,
+                top = FrostSpacing.m,
+                bottom = FrostSpacing.m,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(FrostSpacing.m),
     ) {
         if (isLink) {
             Icon(
@@ -144,12 +162,7 @@ private fun ContributorRow(displayName: String, linkUrl: String?) {
         Text(
             text = displayName,
             style = MaterialTheme.typography.bodyLarge,
-            color = if (isLink) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-            modifier = Modifier.padding(start = if (isLink) 12.dp else 0.dp)
+            color = if (isLink) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
     }
 }

@@ -4,14 +4,16 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,7 +25,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,26 +32,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
-import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostTextButton
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import com.v2ray.ang.ui.compose.ReorderableListItem
 import com.v2ray.ang.ui.compose.SelectListDialog
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
+import com.v2ray.ang.ui.compose.frostCardColors
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
 import sh.calvin.reorderable.ReorderableItem
@@ -128,6 +134,7 @@ fun SubSettingScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_sub_setting),
@@ -150,7 +157,13 @@ fun SubSettingScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScrollbar(lazyListState),
-            contentPadding = NavigationBarsBottomPadding()
+            contentPadding = PaddingValues(
+                start = FrostSpacing.s,
+                end = FrostSpacing.s,
+                top = FrostSpacing.s,
+                bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.xxs),
         ) {
             itemsIndexed(
                 items = subscriptions,
@@ -161,86 +174,27 @@ fun SubSettingScreen(
                         scope = this,
                         isDragging = isDragging
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = subCache.subscription.remarks,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                if (subCache.subscription.url.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = subCache.subscription.url,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                        SubscriptionRow(
+                            item = subCache,
+                            onShare = { shareTarget = Pair(subCache.guid, subCache.subscription.url) },
+                            onEdit = { onEditSub(subCache.guid) },
+                            onRemove = {
+                                if (confirmRemove) {
+                                    removeTarget = SubscriptionDeleteTarget(
+                                        subCache.guid,
+                                        subCache.subscription.remarks,
                                     )
+                                } else {
+                                    onRemoveSub(subCache.guid)
                                 }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = Utils.formatTimestamp(subCache.subscription.lastUpdated),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            },
+                            onEnabledChange = { checked ->
+                                val updated = subCache.subscription.copy()
+                                updated.enabled = checked
+                                viewModel.update(subCache.guid, updated)
                             }
-
-                            Column(
-                                horizontalAlignment = Alignment.End,
-                                modifier = Modifier.padding(start = 8.dp)
-                            ) {
-                                Row {
-                                    if (subCache.subscription.url.isNotEmpty()) {
-                                        IconButton(onClick = {
-                                            shareTarget = Pair(subCache.guid, subCache.subscription.url)
-                                        }) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.ic_share_24dp),
-                                                contentDescription = stringResource(R.string.acc_share_subscription)
-                                            )
-                                        }
-                                    }
-                                    IconButton(onClick = { onEditSub(subCache.guid) }) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_edit_24dp),
-                                            contentDescription = stringResource(R.string.acc_edit)
-                                        )
-                                    }
-                                    IconButton(onClick = {
-                                        if (confirmRemove) removeTarget = SubscriptionDeleteTarget(subCache.guid, subCache.subscription.remarks)
-                                        else onRemoveSub(subCache.guid)
-                                    }) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_delete_24dp),
-                                            contentDescription = stringResource(R.string.acc_delete)
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Switch(
-                                    checked = subCache.subscription.enabled,
-                                    onCheckedChange = { checked ->
-                                        val updated = subCache.subscription.copy()
-                                        updated.enabled = checked
-                                        viewModel.update(subCache.guid, updated)
-                                    },
-                                    modifier = Modifier.scale(0.7f),
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = MaterialTheme.colorScheme.onSecondary,
-                                        checkedTrackColor = MaterialTheme.colorScheme.secondary
-                                    )
-                                )
-                            }
-                        }
+                        )
                     }
-                    ItemDivider()
                 }
             }
         }
@@ -289,8 +243,16 @@ fun SubSettingScreen(
         var autoRemoveInvalidAfterTest by rememberMmkvBool(AppConfig.PREF_AUTO_REMOVE_INVALID_AFTER_TEST, false)
         var autoSortAfterTest by rememberMmkvBool(AppConfig.PREF_AUTO_SORT_AFTER_TEST, false)
 
+        val card = frostCardColors()
         AlertDialog(
             onDismissRequest = { showUpdateDialog = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.title_sub_update),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = card.content,
+                )
+            },
             text = {
                 Column {
                     SettingsSwitchItem(
@@ -321,18 +283,135 @@ fun SubSettingScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    showUpdateDialog = false
-                    onSubUpdate()
-                }) {
-                    Text(text = stringResource(R.string.action_ok))
-                }
+                FrostTextButton(
+                    label = stringResource(R.string.action_ok),
+                    onClick = {
+                        showUpdateDialog = false
+                        onSubUpdate()
+                    }
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showUpdateDialog = false }) {
-                    Text(text = stringResource(R.string.action_cancel))
+                FrostTextButton(
+                    label = stringResource(R.string.action_cancel),
+                    onClick = { showUpdateDialog = false }
+                )
+            },
+            containerColor = card.container,
+            textContentColor = card.content,
+            titleContentColor = card.content,
+            shape = FrostRadius.card,
+            tonalElevation = 0.dp,
+        )
+    }
+}
+
+/**
+ * One subscription: name, link, last update, and the three actions on the row.
+ *
+ * The three icons are separate focus targets with their own names ("Share subscription X"), and the
+ * switch is a fourth; the text block is one merged node, so the row does not read as six fragments.
+ */
+@Composable
+private fun SubscriptionRow(
+    item: SubscriptionCache,
+    onShare: () -> Unit,
+    onEdit: () -> Unit,
+    onRemove: () -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
+) {
+    val remarks = item.subscription.remarks
+    val url = item.subscription.url
+    val shareSubscriptionLabel = stringResource(R.string.acc_share_subscription_named, remarks)
+    val editSubscriptionLabel = stringResource(R.string.acc_edit_subscription_named, remarks)
+    val deleteSubscriptionLabel = stringResource(R.string.acc_delete_subscription_named, remarks)
+    val toggleSubscriptionLabel = stringResource(R.string.acc_toggle_subscription_named, remarks)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = FrostSpacing.l,
+                end = FrostSpacing.s,
+                top = FrostSpacing.m,
+                bottom = FrostSpacing.m,
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .semantics(mergeDescendants = true) {},
+        ) {
+            Text(
+                text = remarks,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (url.isNotEmpty()) {
+                Text(
+                    text = url,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                text = Utils.formatTimestamp(item.subscription.lastUpdated),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (url.isNotEmpty()) {
+                IconButton(
+                    onClick = onShare,
+                    modifier = Modifier.semantics {
+                        contentDescription = shareSubscriptionLabel
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_share_24dp),
+                        contentDescription = null
+                    )
                 }
             }
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier.semantics { contentDescription = editSubscriptionLabel }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_edit_24dp),
+                    contentDescription = null
+                )
+            }
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.semantics { contentDescription = deleteSubscriptionLabel }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_delete_24dp),
+                    contentDescription = null
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(FrostSpacing.xs))
+        Switch(
+            checked = item.subscription.enabled,
+            onCheckedChange = onEnabledChange,
+            modifier = Modifier.semantics { contentDescription = toggleSubscriptionLabel },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                // Without these the unchecked track is surfaceContainerHighest, which is 1.19:1
+                // against the card: an "off" switch looked like a hole in the card.
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+            )
         )
     }
 }

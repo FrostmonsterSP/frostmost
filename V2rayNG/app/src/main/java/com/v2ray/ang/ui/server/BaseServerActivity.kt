@@ -7,13 +7,15 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,8 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.v2ray.ang.AppConfig.REALITY
 import com.v2ray.ang.AppConfig.TLS
 import com.v2ray.ang.R
@@ -44,8 +46,15 @@ import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
-import com.v2ray.ang.ui.compose.NavigationBarsSpacer
+import com.v2ray.ang.ui.compose.FrostFormSection
+import com.v2ray.ang.ui.compose.FrostPrimaryButton
+import com.v2ray.ang.ui.compose.FrostElevation
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostSurface
+import com.v2ray.ang.ui.compose.FrostTextButton
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
+import com.v2ray.ang.ui.compose.frostCardColors
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.JsonUtil
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +62,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/**
+ * Shared shell of the protocol editors.
+ *
+ * The screen is one scrolling column of [FrostFormSection] cards with a pinned bottom bar that holds
+ * the primary action. The bottom bar is inside the same `imePadding()` chain as the scroll container,
+ * so with the keyboard open it rides above the keyboard and the last field stays reachable — the
+ * form contract the UI guide requires.
+ *
+ * Nothing here reads or writes a profile: the screens hand their `ServerUiState` to
+ * [saveServer], which is unchanged from the previous implementation.
+ */
 abstract class BaseServerActivity : BaseComponentActivity() {
 
     protected abstract val serverConfigType: EConfigType
@@ -99,39 +119,56 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         val browserDialerOptions: List<String>
     )
 
+    /** "Основное": the three fields without which a profile cannot exist. */
     @Composable
     protected fun CommonBasicFields(
         state: ServerUiState
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(FrostSpacing.xs)) {
             FormTextField(
                 label = stringResource(R.string.server_lab_remarks),
                 value = state.remarks,
                 onValueChange = { state.remarks = it },
-                isError = state.isRemarksError
+                isError = state.isRemarksError,
+                supportingText = if (state.isRemarksError) {
+                    stringResource(R.string.server_field_required)
+                } else {
+                    null
+                }
             )
             FormTextField(
                 label = stringResource(R.string.server_lab_address),
                 value = state.address,
                 onValueChange = { state.address = it },
-                isError = state.isAddressError
+                isError = state.isAddressError,
+                supportingText = if (state.isAddressError) {
+                    stringResource(R.string.server_field_required)
+                } else {
+                    null
+                }
             )
             FormTextField(
                 label = stringResource(R.string.server_lab_port),
                 value = state.port,
                 onValueChange = { state.port = it },
                 keyboardType = KeyboardType.Number,
-                isError = state.isPortError
+                isError = state.isPortError,
+                supportingText = if (state.isPortError) {
+                    stringResource(R.string.server_field_required)
+                } else {
+                    null
+                }
             )
         }
     }
 
+    /** "Транспорт": everything that describes how the connection is carried. */
     @Composable
     protected fun CommonNetworkFields(
         state: ServerUiState,
         options: FieldOptions
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(FrostSpacing.xs)) {
             FormDropdownField(
                 stringResource(R.string.server_lab_network),
                 state.network,
@@ -247,6 +284,11 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         }
     }
 
+    /**
+     * "TLS" / "Дополничительно": the security layer. The section header itself stays on screen even
+     * when the transport is `none`, because the security dropdown is the control that opens the rest
+     * and must remain reachable.
+     */
     @Composable
     protected fun CommonStreamSecurityFields(
         state: ServerUiState,
@@ -254,8 +296,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         scope: CoroutineScope,
         buildProfileItem: () -> ProfileItem
     ) {
-        val context = LocalContext.current
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(FrostSpacing.xs)) {
             FormDropdownField(
                 stringResource(R.string.server_lab_stream_security),
                 state.streamSecurity,
@@ -306,42 +347,11 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                     state.pinnedCA256,
                     { state.pinnedCA256 = it }
                 )
-                Button(
-                    onClick = {
-                        if (state.address.isBlank()) {
-                            context.toast(R.string.server_lab_address)
-                            return@Button
-                        }
-                        if (
-                            state.configType != EConfigType.HYSTERIA2 &&
-                            (state.port.toIntOrNull() ?: 0) <= 0
-                        ) {
-                            context.toast(R.string.server_lab_port)
-                            return@Button
-                        }
-                        val temp = buildProfileItem()
-                        scope.launch {
-                            state.isFetchingCert = true
-                            try {
-                                val sha256 = withContext(Dispatchers.IO) {
-                                    CertificateFingerprintManager.fetchForManualFill(temp)
-                                }
-                                if (sha256.isNullOrBlank()) {
-                                    context.toast(R.string.toast_fetch_cert_sha256_failed)
-                                } else {
-                                    state.pinnedCA256 = sha256
-                                    context.toastSuccess(R.string.toast_fetch_cert_sha256_success)
-                                }
-                            } finally {
-                                state.isFetchingCert = false
-                            }
-                        }
-                    },
-                    enabled = !state.isFetchingCert,
-                    modifier = Modifier.padding(start = 16.dp)
-                ) {
-                    Text(stringResource(R.string.pinned_ca256_action_fetch))
-                }
+                CertificateFetchAction(
+                    state = state,
+                    scope = scope,
+                    buildProfileItem = buildProfileItem
+                )
             } else if (state.streamSecurity == REALITY) {
                 FormTextField(
                     stringResource(R.string.server_lab_public_key),
@@ -365,6 +375,53 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                 )
             }
         }
+    }
+
+    /** "Получить отпечаток сертификата": a secondary action, so it is a text action, not a filled one. */
+    @Composable
+    private fun CertificateFetchAction(
+        state: ServerUiState,
+        scope: CoroutineScope,
+        buildProfileItem: () -> ProfileItem
+    ) {
+        val context = LocalContext.current
+        // FrostTextButton has no disabled state, so a fetch in flight is guarded in the handler
+        // instead of silently dropping the tap.
+        FrostTextButton(
+            label = stringResource(R.string.pinned_ca256_action_fetch),
+            onClick = {
+                if (state.isFetchingCert) return@FrostTextButton
+                if (state.address.isBlank()) {
+                    context.toast(R.string.server_lab_address)
+                    return@FrostTextButton
+                }
+                if (
+                    state.configType != EConfigType.HYSTERIA2 &&
+                    (state.port.toIntOrNull() ?: 0) <= 0
+                ) {
+                    context.toast(R.string.server_lab_port)
+                    return@FrostTextButton
+                }
+                val temp = buildProfileItem()
+                scope.launch {
+                    state.isFetchingCert = true
+                    try {
+                        val sha256 = withContext(Dispatchers.IO) {
+                            CertificateFingerprintManager.fetchForManualFill(temp)
+                        }
+                        if (sha256.isNullOrBlank()) {
+                            context.toast(R.string.toast_fetch_cert_sha256_failed)
+                        } else {
+                            state.pinnedCA256 = sha256
+                            context.toastSuccess(R.string.toast_fetch_cert_sha256_success)
+                        }
+                    } finally {
+                        state.isFetchingCert = false
+                    }
+                }
+            },
+            modifier = Modifier.padding(start = FrostSpacing.xs),
+        )
     }
 
     protected fun validateBasicConfig(state: ServerUiState): Boolean {
@@ -436,6 +493,13 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         return true
     }
 
+    /**
+     * The editor shell: a title bar, a scrolling column of sections, and a bottom bar with the
+     * primary action ([FrostPrimaryButton]) plus a delete action when the profile can be removed.
+     *
+     * The scroll container keeps `imePadding()`, and the bottom bar sits outside the scrolling
+     * column in the same inset chain, so the last field can always be scrolled above the keyboard.
+     */
     @Composable
     protected fun ServerEditorScaffold(
         title: String,
@@ -444,6 +508,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
     ) {
         var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
         val scrollState = rememberScrollState()
+        val showDelete = editGuid.isNotEmpty() && !isRunning
         Scaffold(
             contentWindowInsets = WindowInsets(0),
             topBar = {
@@ -451,7 +516,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                     title = title,
                     onBackClick = { finish() },
                     actions = {
-                        if (editGuid.isNotEmpty() && !isRunning) {
+                        if (showDelete) {
                             IconButton(onClick = { showDeleteDialog = true }) {
                                 Icon(
                                     painterResource(R.drawable.ic_delete_24dp),
@@ -459,12 +524,16 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                                 )
                             }
                         }
-                        IconButton(onClick = onSaveClick) {
-                            Icon(
-                                painterResource(R.drawable.ic_fab_check),
-                                stringResource(R.string.acc_save)
-                            )
-                        }
+                    }
+                )
+            },
+            bottomBar = {
+                EditorBottomBar(
+                    onSaveClick = onSaveClick,
+                    onDeleteClick = if (showDelete) {
+                        { showDeleteDialog = true }
+                    } else {
+                        null
                     }
                 )
             }
@@ -474,14 +543,20 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                     .fillMaxSize()
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding)
-                    .imePadding()
-                    .verticalScroll(scrollState)
-                    .verticalScrollbar(scrollState)
-                    .padding(bottom = 36.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .imePadding(),
             ) {
-                content()
-                NavigationBarsSpacer()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .verticalScrollbar(scrollState)
+                        .padding(horizontal = FrostSpacing.screenH)
+                        .padding(top = FrostSpacing.l, bottom = FrostSpacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap)
+                ) {
+                    content()
+                }
             }
         }
         if (showDeleteDialog) {
@@ -494,6 +569,59 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                 },
                 onDismiss = { showDeleteDialog = false }
             )
+        }
+    }
+
+    /** A section card inside [ServerEditorScaffold]. */
+    @Composable
+    protected fun EditorSection(
+        title: String,
+        content: @Composable ColumnScope.() -> Unit
+    ) {
+        FrostFormSection(title = title, content = content)
+    }
+
+    /** Pinned action bar. Save is the only filled action on the screen. */
+    @Composable
+    private fun EditorBottomBar(
+        onSaveClick: () -> Unit,
+        onDeleteClick: (() -> Unit)?,
+    ) {
+        // A full-bleed plate: `RectangleShape` rather than a Frost radius, because this bar is the
+        // screen edge itself, not a card resting on it.
+        FrostSurface(
+            colors = frostCardColors(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            shape = RectangleShape,
+            elevation = FrostElevation.card,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = FrostSpacing.screenH,
+                        end = FrostSpacing.screenH,
+                        top = FrostSpacing.m,
+                        bottom = FrostSpacing.m,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
+            ) {
+                FrostPrimaryButton(
+                    label = stringResource(R.string.acc_save),
+                    onClick = onSaveClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = painterResource(R.drawable.ic_fab_check),
+                )
+                if (onDeleteClick != null) {
+                    FrostTextButton(
+                        label = stringResource(R.string.acc_delete),
+                        onClick = onDeleteClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
         }
     }
 

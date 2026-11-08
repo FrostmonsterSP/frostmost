@@ -2,6 +2,7 @@ package com.v2ray.ang.ui.checkupdate
 
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,23 +14,30 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreNativeManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
+import com.v2ray.ang.ui.compose.FrostCardGroup
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostTextButton
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.SettingsMenuItem
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
 import com.v2ray.ang.ui.compose.VersionInfoBlock
+import com.v2ray.ang.ui.compose.frostCardColors
+import com.v2ray.ang.ui.compose.frostPageColors
+import com.v2ray.ang.ui.compose.muted
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
 
@@ -65,8 +73,11 @@ fun CheckUpdateScreen(
     val libVersion = CoreNativeManager.getLibVersion()
     val versionText = "v${BuildConfig.VERSION_NAME} ($libVersion)"
 
+    // The check-update screen had no surface of its own: it drew its rows straight onto the window
+    // background, which is why it looked like settings without settings' page tone.
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.update_check_for_update),
@@ -80,18 +91,25 @@ fun CheckUpdateScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
+                .padding(
+                    top = FrostSpacing.s,
+                    bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+                ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap),
         ) {
-            SettingsSwitchItem(
-                icon = painterResource(R.drawable.ic_source_code_24dp),
-                title = stringResource(R.string.update_check_pre_release),
-                checked = checkPreRelease,
-                onCheckedChange = { viewModel.toggleCheckPreRelease(it) }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_check_update_24dp),
-                title = stringResource(R.string.update_check_for_update),
-                onClick = { viewModel.checkForUpdates() }
-            )
+            FrostCardGroup(Modifier.padding(horizontal = FrostSpacing.screenH)) {
+                SettingsSwitchItem(
+                    icon = painterResource(R.drawable.ic_source_code_24dp),
+                    title = stringResource(R.string.update_check_pre_release),
+                    checked = checkPreRelease,
+                    onCheckedChange = { viewModel.toggleCheckPreRelease(it) }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_check_update_24dp),
+                    title = stringResource(R.string.update_check_for_update),
+                    onClick = { viewModel.checkForUpdates() }
+                )
+            }
             VersionInfoBlock(versionText = versionText)
             NavigationBarsSpacer()
         }
@@ -99,13 +117,22 @@ fun CheckUpdateScreen(
 
     if (showUpdateDialog && updateResult != null) {
         val result = updateResult!!
+        val card = frostCardColors()
         AlertDialog(
             onDismissRequest = { viewModel.dismissUpdateDialog() },
-            title = { Text(stringResource(R.string.update_new_version_found, result.latestVersion ?: "")) },
+            title = {
+                Text(
+                    text = stringResource(R.string.update_new_version_found, result.latestVersion ?: ""),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = card.content,
+                )
+            },
             text = {
                 val scrollState = rememberScrollState()
                 Text(
                     text = result.releaseNotes.orEmpty(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = card.muted(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(scrollState)
@@ -113,19 +140,25 @@ fun CheckUpdateScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.dismissUpdateDialog()
-                    result.downloadUrl?.let { Utils.openUri(context, it) }
-                }) {
-                    Text(stringResource(R.string.update_now))
-                }
+                FrostTextButton(
+                    label = stringResource(R.string.update_now),
+                    onClick = {
+                        viewModel.dismissUpdateDialog()
+                        result.downloadUrl?.let { Utils.openUri(context, it) }
+                    }
+                )
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
+                FrostTextButton(
+                    label = stringResource(R.string.action_cancel),
+                    onClick = { viewModel.dismissUpdateDialog() }
+                )
             },
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = card.container,
+            textContentColor = card.content,
+            titleContentColor = card.content,
+            shape = FrostRadius.card,
+            tonalElevation = 0.dp,
         )
     }
 }

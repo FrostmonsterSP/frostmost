@@ -3,6 +3,7 @@ package com.v2ray.ang.ui.server
 import android.os.Bundle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +41,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -66,7 +69,15 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormTextField
-import com.v2ray.ang.ui.compose.NavigationBarsSpacer
+import com.v2ray.ang.ui.compose.FrostFormSection
+import com.v2ray.ang.ui.compose.FrostPrimaryButton
+import com.v2ray.ang.ui.compose.FrostElevation
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostSurface
+import com.v2ray.ang.ui.compose.FrostTextButton
+import com.v2ray.ang.ui.compose.frostCardColors
+import com.v2ray.ang.ui.compose.frostInnerColors
 import com.v2ray.ang.ui.compose.horizontalScrollbar
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.LogUtil
@@ -310,6 +321,15 @@ fun ServerCustomConfigScreen(
         }
     }
 
+    val onSaveClick = {
+        val remarksErr = remarks.isBlank()
+        isRemarksError = remarksErr
+
+        if (!remarksErr) {
+            onSave(remarks, textFieldState.text.toString())
+        }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -325,22 +345,44 @@ fun ServerCustomConfigScreen(
                             )
                         }
                     }
-                    IconButton(onClick = {
-                        val remarksErr = remarks.isBlank()
-                        isRemarksError = remarksErr
-
-                        val hasError = remarksErr
-                        if (!hasError) {
-                            onSave(remarks, textFieldState.text.toString())
-                        }
-                    }) {
-                        Icon(
-                            painterResource(R.drawable.ic_fab_check),
-                            contentDescription = stringResource(R.string.acc_save)
+                }
+            )
+        },
+        bottomBar = {
+            FrostSurface(
+                colors = frostCardColors(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                shape = RectangleShape,
+                elevation = FrostElevation.card,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = FrostSpacing.screenH,
+                            end = FrostSpacing.screenH,
+                            top = FrostSpacing.m,
+                            bottom = FrostSpacing.m,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
+                ) {
+                    FrostPrimaryButton(
+                        label = stringResource(R.string.acc_save),
+                        onClick = onSaveClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = painterResource(R.drawable.ic_fab_check),
+                    )
+                    if (showDelete) {
+                        FrostTextButton(
+                            label = stringResource(R.string.acc_delete),
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
-            )
+            }
         },
     ) { innerPadding ->
         Column(
@@ -349,146 +391,177 @@ fun ServerCustomConfigScreen(
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
                 .imePadding()
+                .padding(horizontal = FrostSpacing.screenH)
+                .padding(top = FrostSpacing.l),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap),
         ) {
-            FormTextField(
-                label = stringResource(R.string.server_lab_remarks),
-                value = remarks,
-                onValueChange = { remarks = it },
-                isError = isRemarksError
-            )
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(verticalScroll)
-                ) {
-                    val lineNumberColor =
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    val layoutForLineNumbers = textLayoutResult
-
-                    if (layoutForLineNumbers != null && layoutForLineNumbers.lineCount > 0) {
-                        val totalTextHeight = layoutForLineNumbers.size.height
-                        Canvas(
-                            modifier = Modifier
-                                .width(lineNumberWidth)
-                                .height(with(density) { totalTextHeight.toDp() })
-                        ) {
-                            val lc = layoutForLineNumbers.lineCount
-                            for (i in 0 until lc) {
-                                val lineLabel = (i + 1).toString()
-                                val measured = textMeasurer.measure(
-                                    text = lineLabel,
-                                    style = lineNumberStyle.copy(
-                                        color = lineNumberColor,
-                                        textAlign = TextAlign.End,
-                                    ),
-                                )
-                                val lineTop = layoutForLineNumbers.getLineTop(i)
-                                val lineBaseline = layoutForLineNumbers.getLineBaseline(i)
-                                val measuredBaseline = measured.firstBaseline
-                                val yOffset = lineBaseline - measuredBaseline
-                                val xOffset = size.width -
-                                        EditorConstants.LINE_NUMBER_HORIZONTAL_PADDING.toPx() -
-                                        measured.size.width
-                                drawText(
-                                    textLayoutResult = measured,
-                                    topLeft = Offset(
-                                        x = xOffset.coerceAtLeast(0f),
-                                        y = yOffset
-                                    )
-                                )
-                            }
-                        }
+            FrostFormSection(title = stringResource(R.string.server_section_main)) {
+                FormTextField(
+                    label = stringResource(R.string.server_lab_remarks),
+                    value = remarks,
+                    onValueChange = { remarks = it },
+                    isError = isRemarksError,
+                    supportingText = if (isRemarksError) {
+                        stringResource(R.string.server_field_required)
                     } else {
-                        Box(
-                            modifier = Modifier
-                                .width(lineNumberWidth)
-                                .padding(end = EditorConstants.LINE_NUMBER_HORIZONTAL_PADDING),
-                            contentAlignment = Alignment.TopEnd
-                        ) {
-                            Text(
-                                text = "1",
-                                style = lineNumberStyle.copy(color = lineNumberColor),
-                            )
-                        }
+                        null
                     }
+                )
+            }
 
-                    CompositionLocalProvider(
-                        LocalTextSelectionColors provides TextSelectionColors(
-                            handleColor = MaterialTheme.colorScheme.secondary,
-                            backgroundColor = MaterialTheme.colorScheme.secondary.copy(
-                                alpha = 0.4f
-                            )
-                        )
+            // The JSON body keeps its own scrolling text canvas with line numbers: it is a code
+            // editor, not a form field, so it stays inside a card but is not a FormTextField. The
+            // editor well is an inner tone of the section card, so it needs no outline of its own.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
+            ) {
+                Text(
+                    text = stringResource(R.string.server_lab_content),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = FrostSpacing.xs),
+                )
+                FrostSurface(
+                    colors = frostInnerColors(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    shape = FrostRadius.card,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(FrostSpacing.s),
                     ) {
-                        BasicTextField(
-                            state = textFieldState,
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .horizontalScroll(horizontalScroll)
-                                .padding(end = 24.dp)
-                                .padding(bottom = 36.dp),
-                            textStyle = TextStyle(
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = EditorConstants.FONT_SIZE,
-                                lineHeight = EditorConstants.LINE_HEIGHT,
-                                color = MaterialTheme.colorScheme.onSurface
-                            ),
-                            lineLimits = TextFieldLineLimits.MultiLine(),
-                            cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
-                            onTextLayout = { resultProvider ->
-                                textLayoutResult = resultProvider()
-                            },
-                            decorator = { innerTextField ->
-                                Box {
-                                    if (textFieldState.text.isEmpty()) {
-                                        Text(
-                                            text = "{ }",
-                                            style = TextStyle(
-                                                fontFamily = FontFamily.Monospace,
-                                                fontSize = EditorConstants.FONT_SIZE,
-                                                lineHeight = EditorConstants.LINE_HEIGHT,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(
-                                                    alpha = 0.38f
-                                                )
+                                .fillMaxSize()
+                                .verticalScroll(verticalScroll)
+                        ) {
+                            val lineNumberColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            val layoutForLineNumbers = textLayoutResult
+
+                            if (layoutForLineNumbers != null && layoutForLineNumbers.lineCount > 0) {
+                                val totalTextHeight = layoutForLineNumbers.size.height
+                                Canvas(
+                                    modifier = Modifier
+                                        .width(lineNumberWidth)
+                                        .height(with(density) { totalTextHeight.toDp() })
+                                ) {
+                                    val lc = layoutForLineNumbers.lineCount
+                                    for (i in 0 until lc) {
+                                        val lineLabel = (i + 1).toString()
+                                        val measured = textMeasurer.measure(
+                                            text = lineLabel,
+                                            style = lineNumberStyle.copy(
+                                                color = lineNumberColor,
+                                                textAlign = TextAlign.End,
+                                            ),
+                                        )
+                                        val lineTop = layoutForLineNumbers.getLineTop(i)
+                                        val lineBaseline = layoutForLineNumbers.getLineBaseline(i)
+                                        val measuredBaseline = measured.firstBaseline
+                                        val yOffset = lineBaseline - measuredBaseline
+                                        val xOffset = size.width -
+                                                EditorConstants.LINE_NUMBER_HORIZONTAL_PADDING.toPx() -
+                                                measured.size.width
+                                        drawText(
+                                            textLayoutResult = measured,
+                                            topLeft = Offset(
+                                                x = xOffset.coerceAtLeast(0f),
+                                                y = yOffset
                                             )
                                         )
                                     }
-                                    innerTextField()
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .width(lineNumberWidth)
+                                        .padding(end = EditorConstants.LINE_NUMBER_HORIZONTAL_PADDING),
+                                    contentAlignment = Alignment.TopEnd
+                                ) {
+                                    Text(
+                                        text = "1",
+                                        style = lineNumberStyle.copy(color = lineNumberColor),
+                                    )
                                 }
                             }
+
+                            CompositionLocalProvider(
+                                LocalTextSelectionColors provides TextSelectionColors(
+                                    handleColor = MaterialTheme.colorScheme.primary,
+                                    backgroundColor = MaterialTheme.colorScheme.primary.copy(
+                                        alpha = 0.4f
+                                    )
+                                )
+                            ) {
+                                BasicTextField(
+                                    state = textFieldState,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .horizontalScroll(horizontalScroll)
+                                        .padding(end = FrostSpacing.xl)
+                                        .padding(bottom = FrostSpacing.xl),
+                                    textStyle = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = EditorConstants.FONT_SIZE,
+                                        lineHeight = EditorConstants.LINE_HEIGHT,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    lineLimits = TextFieldLineLimits.MultiLine(),
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                    onTextLayout = { resultProvider ->
+                                        textLayoutResult = resultProvider()
+                                    },
+                                    decorator = { innerTextField ->
+                                        Box {
+                                            if (textFieldState.text.isEmpty()) {
+                                                Text(
+                                                    text = "{ }",
+                                                    style = TextStyle(
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = EditorConstants.FONT_SIZE,
+                                                        lineHeight = EditorConstants.LINE_HEIGHT,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                )
+                                            }
+                                            innerTextField()
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .fillMaxHeight()
+                                .width(
+                                    EditorConstants.SCROLLBAR_THICKNESS +
+                                            EditorConstants.SCROLLBAR_PADDING * 2
+                                )
+                                .verticalScrollbar(scrollState = verticalScroll)
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .height(
+                                    EditorConstants.SCROLLBAR_THICKNESS +
+                                            EditorConstants.SCROLLBAR_PADDING * 2
+                                )
+                                .horizontalScrollbar(scrollState = horizontalScroll)
                         )
                     }
                 }
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .fillMaxHeight()
-                        .width(
-                            EditorConstants.SCROLLBAR_THICKNESS +
-                                    EditorConstants.SCROLLBAR_PADDING * 2
-                        )
-                        .verticalScrollbar(scrollState = verticalScroll)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(
-                            EditorConstants.SCROLLBAR_THICKNESS +
-                                    EditorConstants.SCROLLBAR_PADDING * 2
-                        )
-                        .horizontalScrollbar(scrollState = horizontalScroll)
-                )
             }
-            NavigationBarsSpacer()
         }
     }
 

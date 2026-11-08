@@ -32,15 +32,23 @@ class ServerShadowsocksActivity : BaseServerActivity() {
             title = serverConfigType.toString(),
             onSaveClick = { saveServer(uiState) }
         ) {
-            CommonBasicFields(uiState)
-            ShadowsocksProtocolFields(uiState, securityOptions)
-            CommonNetworkFields(uiState, options)
-            CommonStreamSecurityFields(
-                state = uiState,
-                options = options,
-                scope = scope,
-                buildProfileItem = { uiState.toProfileItem(initialConfig) }
-            )
+            EditorSection(stringResource(R.string.server_section_main)) {
+                CommonBasicFields(uiState)
+            }
+            EditorSection(stringResource(R.string.server_section_protocol)) {
+                ShadowsocksProtocolFields(uiState, securityOptions)
+            }
+            EditorSection(stringResource(R.string.server_section_transport)) {
+                CommonNetworkFields(uiState, options)
+            }
+            EditorSection(stringResource(R.string.server_section_security)) {
+                CommonStreamSecurityFields(
+                    state = uiState,
+                    options = options,
+                    scope = scope,
+                    buildProfileItem = { uiState.toProfileItem(initialConfig) }
+                )
+            }
         }
     }
 
@@ -55,7 +63,12 @@ class ServerShadowsocksActivity : BaseServerActivity() {
             label = stringResource(R.string.server_lab_id3),
             value = state.password,
             onValueChange = { state.password = it },
-            isError = state.isPasswordError
+            isError = state.isPasswordError,
+            supportingText = if (state.isPasswordError) {
+                stringResource(R.string.server_field_required)
+            } else {
+                null
+            }
         )
         FormDropdownField(
             stringResource(R.string.server_lab_security),
@@ -65,4 +78,3 @@ class ServerShadowsocksActivity : BaseServerActivity() {
         )
     }
 }
-

@@ -5,14 +5,15 @@ import android.os.Bundle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -20,7 +21,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AppConfig.BUILTIN_OUTBOUND_TAGS
 import com.v2ray.ang.AppConfig.TAG_PROXY
@@ -45,8 +44,11 @@ import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
+import com.v2ray.ang.ui.compose.FrostSecondaryButton
+import com.v2ray.ang.ui.compose.FrostSpacing
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -179,6 +181,7 @@ fun RoutingEditScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.routing_settings_rule_title),
@@ -218,7 +221,7 @@ fun RoutingEditScreen(
                 .imePadding()
                 .verticalScroll(scrollState)
                 .verticalScrollbar(scrollState)
-                .padding(vertical = 8.dp)
+                .padding(vertical = FrostSpacing.s)
         ) {
             FormTextField(
                 label = stringResource(R.string.sub_setting_remarks),
@@ -233,7 +236,12 @@ fun RoutingEditScreen(
             )
             Text(
                 text = stringResource(R.string.routing_settings_tips),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(
+                    start = FrostSpacing.screenH,
+                    end = FrostSpacing.screenH,
+                    top = FrostSpacing.xs,
+                    bottom = FrostSpacing.s,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -257,29 +265,34 @@ fun RoutingEditScreen(
                 enabled = canUseProcess
             )
             if (canUseProcess) {
-                TextButton(
-                    onClick = {
-                        val current = processText
-                            .split(",")
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-                            .distinct()
-                        processPickerLauncher.launch(
-                            AppPickerActivity.createIntent(
-                                context = context,
-                                selectedPackages = current,
-                                title = processSelectTitle
-                            )
-                        )
-                    },
-                    modifier = Modifier.padding(start = 16.dp)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = FrostSpacing.screenH,
+                            end = FrostSpacing.screenH,
+                            top = FrostSpacing.xs,
+                        ),
                 ) {
-                    Icon(
-                        painterResource(R.drawable.ic_per_apps_24dp),
-                        contentDescription = null
+                    FrostSecondaryButton(
+                        label = processSelectTitle,
+                        icon = painterResource(R.drawable.ic_per_apps_24dp),
+                        // The label already names the action; the glyph beside it is decorative.
+                        onClick = {
+                            val current = processText
+                                .split(",")
+                                .map { it.trim() }
+                                .filter { it.isNotEmpty() }
+                                .distinct()
+                            processPickerLauncher.launch(
+                                AppPickerActivity.createIntent(
+                                    context = context,
+                                    selectedPackages = current,
+                                    title = processSelectTitle
+                                )
+                            )
+                        },
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(processSelectTitle)
                 }
             }
             FormTextField(
@@ -310,7 +323,7 @@ fun RoutingEditScreen(
                 onValueChange = { outboundTag = it },
                 editable = true
             )
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(FrostSpacing.xl))
             NavigationBarsSpacer()
         }
 

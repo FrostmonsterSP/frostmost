@@ -8,14 +8,14 @@ import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
@@ -40,6 +40,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -58,9 +60,11 @@ import com.v2ray.ang.ui.base.HelperBaseComponentActivity
 import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
-import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
+import com.v2ray.ang.ui.compose.FrostCardGroup
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
 import com.v2ray.ang.ui.compose.SettingsListItem
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -270,6 +274,7 @@ internal fun UserAssetScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_user_asset_setting),
@@ -284,6 +289,8 @@ internal fun UserAssetScreen(
                             expanded = showAddMenu,
                             onDismissRequest = { showAddMenu = false },
                             containerColor = MaterialTheme.colorScheme.surface,
+                            shape = FrostRadius.card,
+                            tonalElevation = 0.dp,
                             offset = DpOffset(x = 0.dp, y = 0.dp),
                             modifier = Modifier.wrapContentWidth(Alignment.End)
                         ) {
@@ -310,23 +317,52 @@ internal fun UserAssetScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScrollbar(listState),
-            contentPadding = NavigationBarsBottomPadding()
+            contentPadding = PaddingValues(
+                start = FrostSpacing.screenH,
+                end = FrostSpacing.screenH,
+                top = FrostSpacing.s,
+                bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
         ) {
             item(key = "geo_source") {
-                SettingsListItem(
-                    title = stringResource(R.string.asset_geo_files_sources),
-                    entries = geoFilesSourcesList,
-                    values = geoFilesSourcesList,
-                    selectedValue = geoFilesSource,
-                    onSelected = { onGeoSourceSelected(it) }
-                )
+                FrostCardGroup {
+                    SettingsListItem(
+                        title = stringResource(R.string.asset_geo_files_sources),
+                        entries = geoFilesSourcesList,
+                        values = geoFilesSourcesList,
+                        selectedValue = geoFilesSource,
+                        onSelected = { onGeoSourceSelected(it) }
+                    )
+                }
             }
-            item {
+            item(key = "assets_title") {
                 Text(
                     text = stringResource(R.string.title_user_asset_setting),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(
+                        start = FrostSpacing.xs,
+                        top = FrostSpacing.m,
+                        bottom = FrostSpacing.xxs,
+                    ),
                 )
+            }
+            if (uiState.assets.isEmpty()) {
+                item(key = "empty") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = FrostSpacing.xxl),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.frost_empty_list),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
             itemsIndexed(items = uiState.assets, key = { _, item -> item.guid }) { _, item ->
                 UserAssetItem(
@@ -337,11 +373,9 @@ internal fun UserAssetScreen(
                         deleteTarget = AssetDeleteTarget(item.guid, item.assetUrl.remarks)
                     }
                 )
-                ItemDivider()
             }
         }
     }
-
 
     deleteTarget?.let { asset ->
         DeleteConfirmDialog(
@@ -356,6 +390,12 @@ internal fun UserAssetScreen(
     }
 }
 
+/**
+ * One asset file: name, size and date, plus edit and delete.
+ *
+ * The two icons are separate focus targets with their own names, since they do different things; the
+ * text block is merged, so the file reads as one line rather than as three fragments.
+ */
 @Composable
 private fun UserAssetItem(
     item: AssetUrlCache,
@@ -375,47 +415,57 @@ private fun UserAssetItem(
         stringResource(R.string.msg_file_not_found)
     }
     val showEditButton = item.assetUrl.locked != true && item.assetUrl.url != "file"
+    val remarks = item.assetUrl.remarks
+    val editLabel = stringResource(R.string.acc_edit_asset_named, remarks)
+    val deleteLabel = stringResource(R.string.acc_delete_asset_named, remarks)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
+    FrostCardGroup {
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .padding(8.dp)
+                .fillMaxWidth()
+                .padding(start = FrostSpacing.l, end = FrostSpacing.s, top = FrostSpacing.m, bottom = FrostSpacing.m),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = item.assetUrl.remarks,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = propertiesText,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (showEditButton) {
-            IconButton(onClick = onEdit) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics(mergeDescendants = true) {},
+            ) {
+                Text(
+                    text = remarks,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = propertiesText,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (showEditButton) {
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.semantics { contentDescription = editLabel }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_edit_24dp),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+            IconButton(
+                onClick = onDeleteClick,
+                modifier = Modifier.semantics { contentDescription = deleteLabel }
+            ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_edit_24dp),
-                    contentDescription = stringResource(R.string.acc_edit),
+                    painter = painterResource(R.drawable.ic_delete_24dp),
+                    contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
             }
-        }
-        IconButton(onClick = onDeleteClick) {
-            Icon(
-                painter = painterResource(R.drawable.ic_delete_24dp),
-                contentDescription = stringResource(R.string.acc_delete),
-                modifier = Modifier.size(24.dp)
-            )
         }
     }
 }

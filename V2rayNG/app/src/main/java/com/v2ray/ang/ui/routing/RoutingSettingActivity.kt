@@ -4,14 +4,15 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,10 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,12 +55,16 @@ import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.ui.base.HelperBaseComponentActivity
 import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.AppTopBar
-import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
+import com.v2ray.ang.ui.compose.FrostCardGroup
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.ReorderableListItem
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.ui.compose.SelectListDialog
 import com.v2ray.ang.ui.compose.SettingsListItem
-import com.v2ray.ang.ui.compose.colorConfigType
+import com.v2ray.ang.ui.compose.colorConfigTypeDark
+import com.v2ray.ang.ui.compose.colorConfigTypeLight
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
@@ -217,6 +223,7 @@ fun RoutingSettingScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.routing_settings_title),
@@ -238,7 +245,9 @@ fun RoutingSettingScreen(
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            shape = FrostRadius.card,
+                            tonalElevation = 0.dp,
                         ) {
                             AppDropdownMenuItems(RoutingMenuAction.entries, { it.labelRes }) { action ->
                                 showMenu = false
@@ -261,23 +270,27 @@ fun RoutingSettingScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScrollbar(lazyListState),
-            contentPadding = NavigationBarsBottomPadding()
+            contentPadding = PaddingValues(
+                start = FrostSpacing.screenH,
+                end = FrostSpacing.screenH,
+                top = FrostSpacing.s,
+                bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.s),
         ) {
             item(key = "domain_strategy") {
-                SettingsListItem(
-                    title = stringResource(R.string.routing_settings_domain_strategy),
-                    entries = domainStrategies,
-                    values = domainStrategies,
-                    selectedValue = domainStrategy,
-                    onSelected = { onDomainStrategySelected(it) }
-                )
+                FrostCardGroup {
+                    SettingsListItem(
+                        title = stringResource(R.string.routing_settings_domain_strategy),
+                        entries = domainStrategies,
+                        values = domainStrategies,
+                        selectedValue = domainStrategy,
+                        onSelected = { onDomainStrategySelected(it) }
+                    )
+                }
             }
-            item {
-                Text(
-                    text = stringResource(R.string.routing_settings_rule_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
+            item(key = "rule_title") {
+                RoutingSectionTitle(stringResource(R.string.routing_settings_rule_title))
             }
 
             itemsIndexed(
@@ -285,6 +298,8 @@ fun RoutingSettingScreen(
                 key = { _, ruleset -> ruleset.id }
             ) { index, ruleset ->
                 ReorderableItem(reorderableState, key = ruleset.id) { isDragging ->
+                    // One card per rule, so a row that is dragged reads as the card it was and the
+                    // list itself has no background that would move with the row.
                     ReorderableListItem(
                         scope = this,
                         isDragging = isDragging
@@ -298,12 +313,10 @@ fun RoutingSettingScreen(
                             }
                         )
                     }
-                    ItemDivider()
                 }
             }
         }
     }
-
 
     if (showPresetDialog) {
         SelectListDialog(
@@ -319,28 +332,62 @@ fun RoutingSettingScreen(
     }
 }
 
+/** A quiet heading above a list, so the page has sections without a coloured strip. */
+@Composable
+internal fun RoutingSectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(
+            start = FrostSpacing.xs,
+            top = FrostSpacing.m,
+            bottom = FrostSpacing.xxs,
+        ),
+    )
+}
+
+/**
+ * One rule of the list.
+ *
+ * The row carries two independent actions besides the drag handle: "edit" and the enable switch.
+ * Each of the three is its own focusable node with its own localized name; the two text lines are
+ * one node, so TalkBack reads a rule in one sentence instead of four fragments.
+ */
 @Composable
 private fun RoutingRulesetItem(
     ruleset: RulesetItem,
     onEdit: () -> Unit,
     onEnabledChange: (Boolean) -> Unit
 ) {
+    val remarks = ruleset.remarks ?: ""
+    val domainIpInfo = (ruleset.domain ?: ruleset.ip ?: ruleset.process ?: ruleset.port)?.toString() ?: ""
+    val editLabel = stringResource(R.string.acc_edit_rule_named, remarks)
+    val toggleLabel = stringResource(
+        if (ruleset.enabled) R.string.acc_disable_rule_named else R.string.acc_enable_rule_named,
+        remarks,
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(start = FrostSpacing.l, end = FrostSpacing.s, top = FrostSpacing.s, bottom = FrostSpacing.s),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .semantics(mergeDescendants = true) {},
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = ruleset.remarks ?: "",
+                    text = remarks,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 if (ruleset.locked == true) {
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(FrostSpacing.xs))
                     Icon(
                         painter = painterResource(R.drawable.ic_lock_24dp),
                         contentDescription = stringResource(R.string.acc_locked),
@@ -349,9 +396,7 @@ private fun RoutingRulesetItem(
                     )
                 }
             }
-            val domainIpInfo = (ruleset.domain ?: ruleset.ip ?: ruleset.process ?: ruleset.port)?.toString() ?: ""
             if (domainIpInfo.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = domainIpInfo,
                     style = MaterialTheme.typography.bodyMedium,
@@ -361,35 +406,35 @@ private fun RoutingRulesetItem(
                 )
             }
             if (!ruleset.outboundTag.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = ruleset.outboundTag,
                     style = MaterialTheme.typography.labelMedium,
-                    color = colorConfigType
+                    color = if (LocalDarkTheme.current) colorConfigTypeDark else colorConfigTypeLight
                 )
             }
         }
 
-        Column(
-            horizontalAlignment = Alignment.End,
-            modifier = Modifier.padding(start = 8.dp)
-        ) {
-            IconButton(onClick = onEdit) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_edit_24dp),
-                    contentDescription = stringResource(R.string.acc_edit)
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Switch(
-                checked = ruleset.enabled ?: false,
-                onCheckedChange = onEnabledChange,
-                modifier = Modifier.scale(0.7f),
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onSecondary,
-                    checkedTrackColor = MaterialTheme.colorScheme.secondary
-                )
+        IconButton(onClick = onEdit, modifier = Modifier.semantics {
+            contentDescription = editLabel
+        }) {
+            Icon(
+                painter = painterResource(R.drawable.ic_edit_24dp),
+                contentDescription = null
             )
         }
+        Switch(
+            checked = ruleset.enabled,
+            onCheckedChange = onEnabledChange,
+            modifier = Modifier.semantics { contentDescription = toggleLabel },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                // Without these the unchecked track is surfaceContainerHighest, which is 1.19:1
+                // against the card: an "off" switch looked like a hole in the card.
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+            )
+        )
     }
 }

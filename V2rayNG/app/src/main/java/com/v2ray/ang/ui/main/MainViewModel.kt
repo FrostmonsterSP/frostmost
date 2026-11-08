@@ -324,6 +324,7 @@ class MainViewModel(
             MainAction.RefreshGroups -> setupGroupTab(forceRefresh = true)
             MainAction.TestAllServers -> testAllRealPing(true)
             MainAction.TestRealAllServers -> testAllRealPing()
+            is MainAction.TestGroupServers -> testAllRealPing(groupId = action.groupId)
             MainAction.CancelTesting -> cancelAllPing()
             MainAction.RemoveAllServers -> removeAllServerAsync()
             MainAction.RemoveDuplicateServers -> removeDuplicateServerAsync()
@@ -1158,10 +1159,17 @@ class MainViewModel(
         }
     }
 
-    fun testAllRealPing(onlyTcp: Boolean = false) {
+    /**
+     * Measures the delay of a group's servers. [groupId] defaults to the selected group; the home
+     * screen passes the group it actually shows, which can differ from the stored selection.
+     */
+    fun testAllRealPing(onlyTcp: Boolean = false, groupId: String = uiState.value.selectedGroupId) {
         cancelAllPing()
-        val groupId = uiState.value.selectedGroupId
-        val servers = currentServers()
+        val servers = if (groupId == uiState.value.selectedGroupId) {
+            currentServers()
+        } else {
+            mutableServerGroupState(groupId).value.servers
+        }
         if (servers.isEmpty()) {
             return
         }

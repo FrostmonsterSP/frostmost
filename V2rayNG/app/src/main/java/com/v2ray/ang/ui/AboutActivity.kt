@@ -3,6 +3,7 @@ package com.v2ray.ang.ui
 import android.content.Intent
 import android.os.Bundle
 import android.webkit.WebView
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +16,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,9 +33,15 @@ import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreNativeManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
+import com.v2ray.ang.ui.compose.FrostCardGroup
+import com.v2ray.ang.ui.compose.FrostRadius
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.FrostTextButton
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.SettingsMenuItem
 import com.v2ray.ang.ui.compose.VersionInfoBlock
+import com.v2ray.ang.ui.compose.frostCardColors
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.util.Utils
 
 class AboutActivity : BaseComponentActivity() {
@@ -69,6 +75,7 @@ fun AboutScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_about),
@@ -81,37 +88,46 @@ fun AboutScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
+                .padding(
+                    top = FrostSpacing.s,
+                    bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+                ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap),
         ) {
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_source_code_24dp),
-                title = stringResource(R.string.title_source_code),
-                onClick = { Utils.openUri(context, AppConfig.APP_URL) }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.license_24px),
-                title = stringResource(R.string.title_oss_license),
-                onClick = { showOssDialog = true }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_translate_24dp),
-                title = stringResource(R.string.title_translators),
-                onClick = onTranslatorsClick
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_feedback_24dp),
-                title = stringResource(R.string.title_pref_feedback),
-                onClick = { Utils.openUri(context, AppConfig.APP_ISSUES_URL) }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_telegram_24dp),
-                title = stringResource(R.string.title_tg_channel),
-                onClick = { Utils.openUri(context, AppConfig.TG_CHANNEL_URL) }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_privacy_24dp),
-                title = stringResource(R.string.title_privacy_policy),
-                onClick = { Utils.openUri(context, AppConfig.APP_PRIVACY_POLICY) }
-            )
+            FrostCardGroup(Modifier.padding(horizontal = FrostSpacing.screenH)) {
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_source_code_24dp),
+                    title = stringResource(R.string.title_source_code),
+                    onClick = { Utils.openUri(context, AppConfig.APP_URL) }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.license_24px),
+                    title = stringResource(R.string.title_oss_license),
+                    onClick = { showOssDialog = true }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_translate_24dp),
+                    title = stringResource(R.string.title_translators),
+                    onClick = onTranslatorsClick
+                )
+            }
+            FrostCardGroup(Modifier.padding(horizontal = FrostSpacing.screenH)) {
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_feedback_24dp),
+                    title = stringResource(R.string.title_pref_feedback),
+                    onClick = { Utils.openUri(context, AppConfig.APP_ISSUES_URL) }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_telegram_24dp),
+                    title = stringResource(R.string.title_tg_channel),
+                    onClick = { Utils.openUri(context, AppConfig.TG_CHANNEL_URL) }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_privacy_24dp),
+                    title = stringResource(R.string.title_privacy_policy),
+                    onClick = { Utils.openUri(context, AppConfig.APP_PRIVACY_POLICY) }
+                )
+            }
             VersionInfoBlock(
                 versionText = versionText,
                 appIdText = appIdText
@@ -121,9 +137,16 @@ fun AboutScreen(
     }
 
     if (showOssDialog) {
+        val card = frostCardColors()
         AlertDialog(
             onDismissRequest = { showOssDialog = false },
-            title = { Text(stringResource(R.string.title_oss_license)) },
+            title = {
+                Text(
+                    text = stringResource(R.string.title_oss_license),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = card.content,
+                )
+            },
             text = {
                 AndroidView(
                     factory = { ctx ->
@@ -137,12 +160,16 @@ fun AboutScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { showOssDialog = false }) {
-                    Text(stringResource(R.string.action_ok))
-                }
+                FrostTextButton(
+                    label = stringResource(R.string.action_ok),
+                    onClick = { showOssDialog = false }
+                )
             },
-            containerColor = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.padding(bottom = 60.dp)
+            containerColor = card.container,
+            textContentColor = card.content,
+            titleContentColor = card.content,
+            shape = FrostRadius.card,
+            tonalElevation = 0.dp,
         )
     }
 }

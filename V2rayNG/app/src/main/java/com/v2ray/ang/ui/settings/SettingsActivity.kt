@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.viewModels
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -44,7 +45,12 @@ import com.v2ray.ang.root.RootManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.CollapsiblePreferenceGroupHeader
+import com.v2ray.ang.ui.compose.FrostScreenPadding
+import com.v2ray.ang.ui.compose.FrostSpacing
+import com.v2ray.ang.ui.compose.HomeMotionEnterSpec
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
+import com.v2ray.ang.ui.compose.SettingsCard
+import com.v2ray.ang.ui.compose.SettingsDivider
 import com.v2ray.ang.ui.compose.SettingsEditItem
 import com.v2ray.ang.ui.compose.SettingsListItem
 import com.v2ray.ang.ui.compose.SettingsMenuItem
@@ -234,25 +240,28 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .verticalScrollbar(scrollState)
                 .verticalScroll(scrollState)
+                .padding(FrostScreenPadding)
         ) {
-            CollapsiblePreferenceGroupHeader(
+            // --- interface ---
+            SettingsSection(
                 title = stringResource(R.string.title_ui_settings),
                 expanded = uiSettingsExpanded,
-                onExpandedChange = { uiSettingsExpanded = it }
-            )
-            if (uiSettingsExpanded) {
+                onExpandedChange = { uiSettingsExpanded = it },
+            ) {
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_speed_enabled),
                     summary = stringResource(R.string.summary_pref_speed_enabled),
                     checked = speedEnabled,
                     onCheckedChange = { speedEnabled = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_confirm_remove),
                     summary = stringResource(R.string.summary_pref_confirm_remove),
                     checked = confirmRemove,
                     onCheckedChange = { confirmRemove = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_double_column_display),
                     summary = stringResource(R.string.summary_pref_double_column_display),
@@ -262,6 +271,7 @@ fun SettingsScreen(
                         SettingsChangeManager.makeSetupGroupTab()
                     }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_group_all_display),
                     summary = stringResource(R.string.summary_pref_group_all_display),
@@ -271,6 +281,7 @@ fun SettingsScreen(
                         SettingsChangeManager.makeSetupGroupTab()
                     }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_dynamic_color),
                     summary = stringResource(R.string.summary_pref_dynamic_color),
@@ -281,6 +292,7 @@ fun SettingsScreen(
                         ThemeManager.setDynamicColorEnabled(it)
                     }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_language),
                     entries = languageEntries,
@@ -291,6 +303,7 @@ fun SettingsScreen(
                         AppLocaleManager.setApplicationLanguage(it)
                     }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_pref_ui_mode_night),
                     entries = uiModeNightEntries,
@@ -303,24 +316,26 @@ fun SettingsScreen(
                 )
             }
 
-            CollapsiblePreferenceGroupHeader(
+            // --- VPN ---
+            SettingsSection(
                 title = stringResource(R.string.title_vpn_settings),
                 expanded = vpnSettingsExpanded,
-                onExpandedChange = { vpnSettingsExpanded = it }
-            )
-            if (vpnSettingsExpanded) {
+                onExpandedChange = { vpnSettingsExpanded = it },
+            ) {
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_ipv6_enabled),
                     summary = stringResource(R.string.summary_pref_ipv6_enabled),
                     checked = ipv6Enabled,
                     onCheckedChange = { ipv6Enabled = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_prefer_ipv6),
                     summary = stringResource(R.string.summary_pref_prefer_ipv6),
                     checked = preferIpv6,
                     onCheckedChange = { preferIpv6 = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_local_dns_enabled),
                     summary = stringResource(R.string.summary_pref_local_dns_enabled),
@@ -328,6 +343,7 @@ fun SettingsScreen(
                     enabled = isVpn,
                     onCheckedChange = { localDns = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_fake_dns_enabled),
                     summary = stringResource(R.string.summary_pref_fake_dns_enabled),
@@ -335,12 +351,14 @@ fun SettingsScreen(
                     enabled = isVpn && localDns,
                     onCheckedChange = { fakeDns = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_vpn_dns),
                     value = vpnDns,
                     enabled = isVpn && !localDns,
                     onValueChanged = { vpnDns = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_append_http_proxy),
                     summary = stringResource(R.string.summary_pref_append_http_proxy),
@@ -348,6 +366,7 @@ fun SettingsScreen(
                     enabled = effectiveLocalProxy,
                     onCheckedChange = { appendHttpProxy = it }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_pref_vpn_bypass_lan),
                     entries = bypassLanEntries,
@@ -356,6 +375,7 @@ fun SettingsScreen(
                     enabled = isVpn,
                     onSelected = { vpnBypassLan = it }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_pref_vpn_interface_address),
                     entries = interfaceAddrEntries,
@@ -364,6 +384,7 @@ fun SettingsScreen(
                     enabled = isVpn,
                     onSelected = { vpnInterfaceAddress = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_vpn_mtu),
                     value = vpnMtu,
@@ -371,6 +392,7 @@ fun SettingsScreen(
                     keyboardNumber = true,
                     onValueChanged = { vpnMtu = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_use_hev_tunnel),
                     summary = stringResource(R.string.summary_pref_use_hev_tunnel),
@@ -383,6 +405,7 @@ fun SettingsScreen(
                         }
                     }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_pref_hev_tunnel_loglevel),
                     entries = hevLogEntries,
@@ -391,6 +414,7 @@ fun SettingsScreen(
                     enabled = hevTunEnabled,
                     onSelected = { hevTunLogLevel = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_hev_tunnel_rw_timeout),
                     value = hevTunRwTimeout,
@@ -400,24 +424,26 @@ fun SettingsScreen(
                 )
             }
 
-            CollapsiblePreferenceGroupHeader(
+            // --- core ---
+            SettingsSection(
                 title = stringResource(R.string.title_core_settings),
                 expanded = coreSettingsExpanded,
-                onExpandedChange = { coreSettingsExpanded = it }
-            )
-            if (coreSettingsExpanded) {
+                onExpandedChange = { coreSettingsExpanded = it },
+            ) {
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_sniffing_enabled),
                     summary = stringResource(R.string.summary_pref_sniffing_enabled),
                     checked = sniffingEnabled,
                     onCheckedChange = { sniffingEnabled = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_route_only_enabled),
                     summary = stringResource(R.string.summary_pref_route_only_enabled),
                     checked = routeOnlyEnabled,
                     onCheckedChange = { routeOnlyEnabled = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_enable_local_proxy),
                     summary = stringResource(R.string.summary_pref_enable_local_proxy),
@@ -432,6 +458,7 @@ fun SettingsScreen(
                         }
                     }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_proxy_sharing_enabled),
                     summary = stringResource(R.string.summary_pref_proxy_sharing_enabled),
@@ -439,6 +466,7 @@ fun SettingsScreen(
                     enabled = effectiveLocalProxy,
                     onCheckedChange = { proxySharing = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_dynamic_socks_port),
                     summary = stringResource(R.string.summary_pref_dynamic_socks_port),
@@ -446,6 +474,7 @@ fun SettingsScreen(
                     enabled = effectiveLocalProxy,
                     onCheckedChange = { dynamicSocksPort = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_socks_port),
                     value = socksPort,
@@ -453,12 +482,14 @@ fun SettingsScreen(
                     keyboardNumber = true,
                     onValueChanged = { socksPort = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_socks_username),
                     value = socksUsername,
                     enabled = effectiveLocalProxy,
                     onValueChanged = { socksUsername = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_socks_password),
                     value = socksPassword,
@@ -466,6 +497,7 @@ fun SettingsScreen(
                     isPassword = true,
                     onValueChanged = { socksPassword = it }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_socks_enable_udp),
                     summary = stringResource(R.string.summary_pref_socks_enable_udp),
@@ -473,21 +505,25 @@ fun SettingsScreen(
                     enabled = effectiveLocalProxy,
                     onCheckedChange = { socksEnableUdp = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_remote_dns),
                     value = remoteDns,
                     onValueChanged = { remoteDns = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_domestic_dns),
                     value = domesticDns,
                     onValueChanged = { domesticDns = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_dns_hosts),
                     value = dnsHosts,
                     onValueChanged = { dnsHosts = it }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_core_loglevel),
                     entries = coreLogLevelEntries,
@@ -495,6 +531,7 @@ fun SettingsScreen(
                     selectedValue = coreLogLevel,
                     onSelected = { coreLogLevel = it }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_outbound_domain_resolve_method),
                     entries = outboundResolveEntries,
@@ -504,18 +541,19 @@ fun SettingsScreen(
                 )
             }
 
-            CollapsiblePreferenceGroupHeader(
+            // --- mux ---
+            SettingsSection(
                 title = stringResource(R.string.title_mux_settings),
                 expanded = muxSettingsExpanded,
-                onExpandedChange = { muxSettingsExpanded = it }
-            )
-            if (muxSettingsExpanded) {
+                onExpandedChange = { muxSettingsExpanded = it },
+            ) {
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_mux_enabled),
                     summary = stringResource(R.string.summary_pref_mux_enabled),
                     checked = mux,
                     onCheckedChange = { mux = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_mux_concurrency),
                     value = muxConcurrency,
@@ -523,6 +561,7 @@ fun SettingsScreen(
                     keyboardNumber = true,
                     onValueChanged = { muxConcurrency = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_mux_xudp_concurrency),
                     value = muxXudpConcurrency,
@@ -530,6 +569,7 @@ fun SettingsScreen(
                     keyboardNumber = true,
                     onValueChanged = { muxXudpConcurrency = it }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_pref_mux_xudp_quic),
                     entries = xudpQuicEntries,
@@ -540,17 +580,18 @@ fun SettingsScreen(
                 )
             }
 
-            CollapsiblePreferenceGroupHeader(
+            // --- fragment ---
+            SettingsSection(
                 title = stringResource(R.string.title_fragment_settings),
                 expanded = fragmentSettingsExpanded,
-                onExpandedChange = { fragmentSettingsExpanded = it }
-            )
-            if (fragmentSettingsExpanded) {
+                onExpandedChange = { fragmentSettingsExpanded = it },
+            ) {
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_fragment_enabled),
                     checked = fragment,
                     onCheckedChange = { fragment = it }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_pref_fragment_packets),
                     entries = fragmentPacketsEntries,
@@ -559,18 +600,21 @@ fun SettingsScreen(
                     enabled = fragment,
                     onSelected = { fragmentPackets = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_fragment_length),
                     value = fragmentLength,
                     enabled = fragment,
                     onValueChanged = { fragmentLength = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_fragment_interval),
                     value = fragmentInterval,
                     enabled = fragment,
                     onValueChanged = { fragmentInterval = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_fragment_maxsplit),
                     value = fragmentMaxSplit,
@@ -580,12 +624,12 @@ fun SettingsScreen(
                 )
             }
 
-            CollapsiblePreferenceGroupHeader(
+            // --- observatory ---
+            SettingsSection(
                 title = stringResource(R.string.title_observatory_settings),
                 expanded = observatorySettingsExpanded,
-                onExpandedChange = { observatorySettingsExpanded = it }
-            )
-            if (observatorySettingsExpanded) {
+                onExpandedChange = { observatorySettingsExpanded = it },
+            ) {
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_observatory_least_ping_interval),
                     value = observatoryLeastPingInterval,
@@ -595,6 +639,7 @@ fun SettingsScreen(
                         }
                     }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_observatory_least_load_interval),
                     value = observatoryLeastLoadInterval,
@@ -604,6 +649,7 @@ fun SettingsScreen(
                         }
                     }
                 )
+                SettingsDivider()
                 SettingsListItem(
                     title = stringResource(R.string.title_pref_observatory_least_load_method),
                     entries = observatoryLeastLoadMethodEntries,
@@ -611,6 +657,7 @@ fun SettingsScreen(
                     selectedValue = observatoryLeastLoadMethod,
                     onSelected = { observatoryLeastLoadMethod = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_observatory_least_load_sampling),
                     value = observatoryLeastLoadSampling,
@@ -621,6 +668,7 @@ fun SettingsScreen(
                         }
                     }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_observatory_least_load_timeout),
                     value = observatoryLeastLoadTimeout,
@@ -632,12 +680,12 @@ fun SettingsScreen(
                 )
             }
 
-            CollapsiblePreferenceGroupHeader(
+            // --- advanced ---
+            SettingsSection(
                 title = stringResource(R.string.title_advanced),
                 expanded = advancedSettingsExpanded,
-                onExpandedChange = { advancedSettingsExpanded = it }
-            )
-            if (advancedSettingsExpanded) {
+                onExpandedChange = { advancedSettingsExpanded = it },
+            ) {
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_is_booted),
                     summary = stringResource(R.string.summary_pref_is_booted),
@@ -645,23 +693,27 @@ fun SettingsScreen(
                     onCheckedChange = { isBooted = it }
                 )
                 if (systemVpnSettingsAvailable) {
+                    SettingsDivider()
                     SettingsMenuItem(
                         title = stringResource(R.string.title_system_vpn_settings),
                         subtitle = stringResource(R.string.summary_system_vpn_settings),
                         onClick = onSystemVpnSettingsClicked
                     )
                 }
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_delay_test_url),
                     value = delayTestUrl,
                     onValueChanged = { delayTestUrl = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_real_ping_concurrency),
                     value = realPingConcurrency,
                     keyboardNumber = true,
                     onValueChanged = { realPingConcurrency = it }
                 )
+                SettingsDivider()
                 SettingsEditItem(
                     title = stringResource(R.string.title_pref_ip_api_url),
                     value = ipApiUrl,
@@ -669,12 +721,12 @@ fun SettingsScreen(
                 )
             }
 
-            CollapsiblePreferenceGroupHeader(
+            // --- mode ---
+            SettingsSection(
                 title = stringResource(R.string.title_mode_settings),
                 expanded = modeSettingsExpanded,
-                onExpandedChange = { modeSettingsExpanded = it }
-            )
-            if (modeSettingsExpanded) {
+                onExpandedChange = { modeSettingsExpanded = it },
+            ) {
                 SettingsListItem(
                     title = stringResource(R.string.title_mode),
                     entries = modeEntries,
@@ -682,10 +734,12 @@ fun SettingsScreen(
                     selectedValue = mode,
                     onSelected = { mode = it }
                 )
+                SettingsDivider()
                 SettingsMenuItem(
                     title = stringResource(R.string.title_mode_help),
                     onClick = onModeHelpClicked
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_root_mode_enabled),
                     summary = stringResource(R.string.summary_root_mode_enabled),
@@ -700,6 +754,7 @@ fun SettingsScreen(
                         }
                     }
                 )
+                SettingsDivider()
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_root_lan_sharing),
                     summary = stringResource(R.string.summary_root_lan_sharing),
@@ -716,8 +771,33 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(FrostSpacing.xxl))
             NavigationBarsSpacer()
+        }
+    }
+}
+
+/**
+ * One collapsible group: a header that names the section and a card that holds its rows.
+ *
+ * Everything renders inside a single container so the open/close animation covers the header and
+ * the card as one object; a card that slid in separately from its title would read as two changes.
+ */
+@Composable
+private fun SettingsSection(
+    title: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Column(modifier = Modifier.animateContentSize(animationSpec = HomeMotionEnterSpec)) {
+        CollapsiblePreferenceGroupHeader(
+            title = title,
+            expanded = expanded,
+            onExpandedChange = onExpandedChange,
+        )
+        if (expanded) {
+            SettingsCard { content() }
         }
     }
 }

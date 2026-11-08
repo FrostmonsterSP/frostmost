@@ -551,6 +551,9 @@
     <string name="acc_save">Save</string>
     <string name="acc_update_subscriptions">Update subscriptions</string>
     <string name="acc_per_app_proxy_information">Per-app proxy information</string>
+    <string name="acc_per_app_proxy_status">Per-app proxy status</string>
+    <string name="settings_section_expand">Expand section</string>
+    <string name="settings_section_collapse">Collapse section</string>
     <string name="permission_camera">Camera</string>
     <string name="permission_notification">Notification</string>
     <string name="permission_local_network">Local network</string>
@@ -627,10 +630,8 @@
     <string name="home_server_actions_named">Actions for %1$s</string>
     <string name="home_servers_empty">No servers in this subscription</string>
     <string name="home_server_ping_unknown">—</string>
-    <string name="home_restart_needs_vpn">Turn the VPN on to restart it</string>
     <string name="home_check">Check</string>
     <string name="home_check_stop">Stop</string>
-    <string name="home_restart">Restart</string>
     <string name="home_switching_to">Switching to “%1$s”</string>
     <string name="home_undo">Undo</string>
     <string name="home_empty">No groups yet</string>
@@ -659,4 +660,37 @@
     <string name="home_import_downloading">Downloading the subscription…</string>
     <string name="home_import_retry">Retry</string>
     <string name="home_link_confirm">Add the subscription “%1$s”?</string>
+    <string name="home_traffic_unlimited_short">No limit</string>
+    <string name="home_traffic_of_short">of %1$s</string>
+    <string name="home_manual_group">Manual group</string>
+
+    <!-- Section titles of the server editors (FrostMost rebuild) -->
+    <string name="server_section_main">Main</string>
+    <string name="server_section_protocol">Protocol</string>
+    <string name="server_section_transport">Transport</string>
+    <string name="server_section_security">TLS</string>
+    <string name="server_section_extra">Additional</string>
+    <string name="server_section_chain_members">Chain members</string>
+    <string name="server_field_required">This field is required</string>
+
+    <!-- Shared chrome of the FrostMost rebuild -->
+    <string name="acc_clear_search">Clear search</string>
+    <string name="acc_select_app">Select %1$s</string>
+    <string name="acc_deselect_app">Deselect %1$s</string>
+    <string name="acc_refresh_log">Refresh log</string>
+    <string name="frost_empty_list">Nothing here yet</string>
+    <string name="home_search_servers">Search servers</string>
+    <string name="home_search_clear">Clear search</string>
+    <string name="acc_edit_rule_named">Edit rule “%1$s”</string>
+    <string name="acc_enable_rule_named">Enable rule “%1$s”</string>
+    <string name="acc_disable_rule_named">Disable rule “%1$s”</string>
+    <string name="acc_edit_subscription_named">Edit subscription “%1$s”</string>
+    <string name="acc_delete_subscription_named">Delete subscription “%1$s”</string>
+    <string name="acc_share_subscription_named">Share subscription “%1$s”</string>
+    <string name="acc_toggle_subscription_named">Enable subscription “%1$s”</string>
+    <string name="acc_open_profile">Open profile of %1$s</string>
+    <string name="acc_edit_asset_named">Edit asset “%1$s”</string>
+    <string name="acc_delete_asset_named">Delete asset “%1$s”</string>
+    <string name="frost_state_on">On</string>
+    <string name="frost_state_off">Off</string>
 </resources>

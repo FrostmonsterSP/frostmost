@@ -5,11 +5,10 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -39,11 +38,14 @@ import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.ui.base.HelperBaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
+import com.v2ray.ang.ui.compose.FrostCardGroup
+import com.v2ray.ang.ui.compose.FrostSpacing
 import com.v2ray.ang.ui.compose.InputDialog
 import com.v2ray.ang.ui.compose.InputField
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.SelectListDialog
 import com.v2ray.ang.ui.compose.SettingsMenuItem
+import com.v2ray.ang.ui.compose.frostPageColors
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -202,8 +204,11 @@ fun BackupScreen(
 
     val webDavSummary = currentWebDavConfig?.baseUrl
 
+    // The page draws its own surface: backup and restore touch real files, and a screen that only
+    // relied on the window background had no card, no page tone and no content padding of its own.
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        containerColor = frostPageColors().container,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.title_configuration_backup_restore),
@@ -217,35 +222,43 @@ fun BackupScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
+                .padding(
+                    top = FrostSpacing.s,
+                    bottom = innerPadding.calculateBottomPadding() + FrostSpacing.xl,
+                ),
+            verticalArrangement = Arrangement.spacedBy(FrostSpacing.cardGap),
         ) {
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_backup_24dp),
-                title = stringResource(R.string.title_configuration_backup),
-                onClick = { showBackupDialog = true }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_share_24dp),
-                title = stringResource(R.string.title_configuration_share),
-                onClick = onShareClick
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_restore_24dp),
-                title = stringResource(R.string.title_configuration_restore),
-                onClick = { showRestoreDialog = true }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_delete_24dp),
-                title = stringResource(R.string.title_profile_storage_cleanup),
-                subtitle = stringResource(R.string.summary_profile_storage_cleanup),
-                onClick = { showCleanupDialog = true }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_settings_24dp),
-                title = stringResource(R.string.title_webdav_config_setting),
-                subtitle = webDavSummary,
-                onClick = { showWebDavDialog = true }
-            )
+            FrostCardGroup(Modifier.padding(horizontal = FrostSpacing.screenH)) {
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_backup_24dp),
+                    title = stringResource(R.string.title_configuration_backup),
+                    onClick = { showBackupDialog = true }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_share_24dp),
+                    title = stringResource(R.string.title_configuration_share),
+                    onClick = onShareClick
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_restore_24dp),
+                    title = stringResource(R.string.title_configuration_restore),
+                    onClick = { showRestoreDialog = true }
+                )
+            }
+            FrostCardGroup(Modifier.padding(horizontal = FrostSpacing.screenH)) {
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_delete_24dp),
+                    title = stringResource(R.string.title_profile_storage_cleanup),
+                    subtitle = stringResource(R.string.summary_profile_storage_cleanup),
+                    onClick = { showCleanupDialog = true }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_settings_24dp),
+                    title = stringResource(R.string.title_webdav_config_setting),
+                    subtitle = webDavSummary,
+                    onClick = { showWebDavDialog = true }
+                )
+            }
             NavigationBarsSpacer()
         }
     }
