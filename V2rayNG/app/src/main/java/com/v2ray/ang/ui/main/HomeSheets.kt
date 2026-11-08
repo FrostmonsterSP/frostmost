@@ -49,13 +49,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Which bottom sheet the home screen shows; null means none. */
-internal enum class HomeSheet { Add, Rules, More, Ways }
+internal enum class HomeSheet { Add, More, Ways }
 
 /** Group id the repository uses for "update all subscriptions". */
 private const val ALL_SUBSCRIPTIONS_ID = ""
 
 /** The five presets in the order the sheet lists them. */
-private val RULE_PRESETS = listOf(
+internal val RULE_PRESETS = listOf(
     RoutingType.GLOBAL,
     RoutingType.WHITE_RUSSIA,
     RoutingType.WHITE_IRAN,
@@ -72,8 +72,6 @@ private val RULE_PRESETS = listOf(
 internal fun HomeSheetHost(
     sheet: HomeSheet?,
     onSheetChange: (HomeSheet?) -> Unit,
-    routingPreset: RoutingType?,
-    routingPresetLoaded: Boolean,
     pendingRules: PendingRules?,
     importDraft: String?,
     importDraftFailure: SubscriptionFailure?,
@@ -95,12 +93,6 @@ internal fun HomeSheetHost(
             }
             when (sheet) {
                 HomeSheet.Add -> AddSheetContent(draft = importDraft, failure = importDraftFailure, onAction = act)
-                HomeSheet.Rules -> RulesSheetContent(
-                    preset = routingPreset,
-                    presetLoaded = routingPresetLoaded,
-                    onAction = act,
-                    onAddOwn = { onSheetChange(HomeSheet.Add) },
-                )
                 HomeSheet.Ways -> WaysSheetContent(
                     onAction = act,
                     onNavigate = { destination ->
@@ -234,51 +226,6 @@ private fun importKindLabel(kind: ImportKind): Int = when (kind) {
     ImportKind.Config -> R.string.home_add_kind_config
     ImportKind.Routing -> R.string.home_add_kind_routing
     ImportKind.Invalid -> R.string.home_add_kind_invalid
-}
-
-@Composable
-private fun RulesSheetContent(
-    preset: RoutingType?,
-    presetLoaded: Boolean,
-    onAction: (MainAction) -> Unit,
-    onAddOwn: () -> Unit,
-) {
-    Column(
-        Modifier
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 16.dp),
-    ) {
-        SheetTitle(R.string.home_rules)
-        // Custom rules match no preset, so there is nothing to pick: shown as the current state only.
-        if (presetLoaded && preset == null) {
-            RuleRow(label = stringResource(R.string.home_rules_custom), selected = true, onClick = null)
-        }
-        RULE_PRESETS.forEach { type ->
-            RuleRow(
-                label = stringResource(routingPresetLabelRes(type)),
-                selected = presetLoaded && preset == type,
-                onClick = { onAction(MainAction.ApplyRoutingPreset(type)) },
-            )
-        }
-        SheetRow(stringResource(R.string.home_rules_add_own), onClick = onAddOwn)
-    }
-}
-
-@Composable
-private fun RuleRow(label: String, selected: Boolean, onClick: (() -> Unit)?) {
-    val base = Modifier
-        .fillMaxWidth()
-        .heightIn(min = 56.dp)
-    Row(
-        (if (onClick != null) base.selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-        else base.semantics(mergeDescendants = true) { stateDescription = label })
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Text(label, style = MaterialTheme.typography.bodyLarge)
-    }
 }
 
 @Composable

@@ -621,6 +621,14 @@
     <string name="home_servers_show">Показать серверы</string>
     <string name="home_servers_hide">Скрыть серверы</string>
     <string name="home_servers_menu">Действия со списком серверов</string>
+    <string name="home_section_expand">Раскрыть раздел</string>
+    <string name="home_section_collapse">Свернуть раздел</string>
+    <string name="home_section_expanded">раскрыт</string>
+    <string name="home_section_collapsed">свёрнут</string>
+    <string name="home_rules_no_subscription">Подписки пока нет</string>
+    <string name="home_server_select">Выбрать этот сервер</string>
+    <string name="home_server_actions_named">Действия для «%1$s»</string>
+    <string name="home_servers_empty">В этой подписке нет серверов</string>
     <string name="home_check">Проверить</string>
     <string name="home_check_stop">Остановить</string>
     <string name="home_restart">Перезапустить</string>
