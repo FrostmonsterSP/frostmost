@@ -8,7 +8,10 @@ on:
         type: string
   push:
     branches:
-      - master
+      # Only the fork's own branch builds a FrostMost APK. `master` stays an untouched mirror of
+      # upstream v2rayNG, so building it here would produce a v2rayNG-branded clone under this
+      # repository's name.
+      - fork/friendly-ui
 
 permissions:
   contents: write
