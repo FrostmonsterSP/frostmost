@@ -144,11 +144,41 @@ internal fun resolveServerForSubscription(remembered: String?, groupGuids: List<
 internal fun shouldShowFirstRun(cards: List<HomeCard>, serverCount: Int): Boolean =
     serverCount == 0 && cards.none { !it.isManual }
 
+/**
+ * Subscription colors, light theme. Every entry keeps white text at 4.5:1 or better, also over the
+ * [HOME_ON_ACCENT_OVERLAY] scrim and over anything the sheet scrim can leave of the accent.
+ */
 internal val HOME_ACCENTS: List<Long> = listOf(
-    0xFF2447C8, 0xFF6B2A80, 0xFF0E6A70, 0xFF1F6B3A, 0xFF8C1D40, 0xFF7A4A00,
+    0xFF2447C8, // blue
+    0xFF6B2A80, // purple
+    0xFF0E6A70, // teal
+    0xFF1F6B3A, // green
+    0xFF8C1D40, // wine
+    0xFF7A4A00, // bronze
 )
 
-/** White overlay behind chips, actions and strips drawn on an accent background; keeps white text at 4.5:1 on every accent. */
-internal const val HOME_ON_ACCENT_OVERLAY = 0.12f
+/**
+ * The same subscription colors for the dark theme: the light values are too dark to read as color on
+ * a dark surface, these keep white text at 4.5:1 as well.
+ */
+internal val HOME_ACCENTS_DARK: List<Long> = listOf(
+    0xFF3556D6, // blue
+    0xFF853197, // purple
+    0xFF0C6E75, // teal
+    0xFF1E6B3C, // green
+    0xFFA1254C, // wine
+    0xFF8F5600, // bronze
+)
+
+/**
+ * White overlay behind blocks drawn on an accent background: the mockup's calm "raised, not
+ * shouted" tone. 12% already dropped white text to 4.9:1 on the teal accent, so it stays at 10%.
+ */
+internal const val HOME_ON_ACCENT_OVERLAY = 0.10f
 
 internal fun accentFor(id: String): Int = Math.floorMod(id.hashCode(), HOME_ACCENTS.size)
+
+/** Accent index [accent] as a color, in the palette of the current theme. */
+internal fun accentColor(accent: Int, dark: Boolean): Long =
+    if (dark) HOME_ACCENTS_DARK[Math.floorMod(accent, HOME_ACCENTS_DARK.size)]
+    else HOME_ACCENTS[Math.floorMod(accent, HOME_ACCENTS.size)]

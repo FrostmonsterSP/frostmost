@@ -84,6 +84,9 @@ internal fun HomeSheetHost(
         ModalBottomSheet(
             onDismissRequest = { onSheetChange(null) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            // Popups are deliberately not on the subscription color: the mockup keeps the accent on
+            // the card, and their fields and menus want the plain theme surface underneath.
+            containerColor = MaterialTheme.colorScheme.surface,
         ) {
             // Close first, then act: the action may launch another activity.
             val act: (MainAction) -> Unit = { action ->

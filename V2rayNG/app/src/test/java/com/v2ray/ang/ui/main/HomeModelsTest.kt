@@ -183,7 +183,7 @@ class HomeModelsTest {
     }
 
     @Test fun whiteTextReadableOnOverlayOverEveryAccent() {
-        HOME_ACCENTS.forEach { accent ->
+        (HOME_ACCENTS + HOME_ACCENTS_DARK).forEach { accent ->
             fun mix(shift: Int): Long {
                 val c = (accent shr shift) and 0xFF
                 return Math.round(c + (255 - c) * HOME_ON_ACCENT_OVERLAY.toDouble())
@@ -191,6 +191,24 @@ class HomeModelsTest {
             val blended = 0xFF000000 or (mix(16) shl 16) or (mix(8) shl 8) or mix(0)
             assertTrue(contrastWithWhite(blended) >= 4.5, "accent ${accent.toString(16)}")
         }
+    }
+
+    @Test fun bothPalettesKeepWhiteReadable() {
+        HOME_ACCENTS.forEach { assertTrue(contrastWithWhite(it) >= 4.5, "light accent ${it.toString(16)}") }
+        HOME_ACCENTS_DARK.forEach { assertTrue(contrastWithWhite(it) >= 4.5, "dark accent ${it.toString(16)}") }
+        assertEquals(HOME_ACCENTS.size, HOME_ACCENTS_DARK.size)
+    }
+
+    @Test fun accentColorPicksThePaletteOfTheTheme() {
+        // Both palettes are checked index by index, so a swapped or missing entry is named.
+        for (accent in HOME_ACCENTS.indices) {
+            assertEquals(HOME_ACCENTS[accent], accentColor(accent, dark = false), "light accent $accent")
+            assertEquals(HOME_ACCENTS_DARK[accent], accentColor(accent, dark = true), "dark accent $accent")
+        }
+        // A stored accent stays valid when a palette later shrinks, and the hash stays in range.
+        assertEquals(HOME_ACCENTS[0], accentColor(HOME_ACCENTS.size, dark = false))
+        assertEquals(HOME_ACCENTS_DARK[0], accentColor(-HOME_ACCENTS_DARK.size, dark = true))
+        assertTrue(accentFor("any-group") in HOME_ACCENTS.indices)
     }
 
     @Test fun failedUpdateShowsOnlyOnItsOwnCard() {

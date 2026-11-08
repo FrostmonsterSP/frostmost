@@ -95,11 +95,14 @@ fun HomeScreen(
         powerEnabled = uiState.isRunning || !uiState.isConnecting,
     )
 
-    val accent = card?.accentColor() ?: MaterialTheme.colorScheme.primary
+    val accent = card?.accentColor(LocalDarkTheme.current) ?: MaterialTheme.colorScheme.primary
     val background by animateColorAsState(
         if (lit) accent else MaterialTheme.colorScheme.background,
         label = "homeBackground",
     )
+    // The strip, the action row and the rules row all take this one surface, so the page reads as a
+    // single calm layer around the card instead of a stack of tinted blocks.
+    val neutralSurface = homeNeutralSurface(lit)
     val onBackground = if (lit) Color.White else MaterialTheme.colorScheme.onBackground
     LightStatusBarIcons(onAccent = lit)
 
@@ -216,7 +219,7 @@ fun HomeScreen(
                     HomeActionRow(
                         card = card,
                         issue = issue,
-                        lit = lit,
+                        colors = neutralSurface,
                         updating = isLoading,
                         onUpdate = { onAction(MainAction.UpdateGroupSubscription(card.id)) },
                         onOpenLink = { url -> onAction(MainAction.OpenSubscriptionLink(url)) },
@@ -226,19 +229,20 @@ fun HomeScreen(
                         HomeIssueStrip(
                             issue = it,
                             lit = lit,
+                            neutral = neutralSurface,
                             onOtherServer = { scope.launch { sheetState.expand() } },
                             onAllowVpn = { onAction(MainAction.ToggleService) },
                             modifier = stripModifier,
                         )
                     }
                     card.announce?.takeIf { it.isNotBlank() }?.let { text ->
-                        HomeAnnounceStrip(cardId = card.id, text = text, lit = lit, modifier = stripModifier)
+                        HomeAnnounceStrip(cardId = card.id, text = text, colors = neutralSurface, modifier = stripModifier)
                     }
                 }
                 HomeRulesRow(
                     presetLoaded = uiState.routingPresetLoaded,
                     preset = uiState.routingPreset,
-                    lit = lit,
+                    colors = neutralSurface,
                     onClick = { sheet = HomeSheet.Rules },
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
                 )

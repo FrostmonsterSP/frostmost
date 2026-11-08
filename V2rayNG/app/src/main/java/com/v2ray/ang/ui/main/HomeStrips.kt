@@ -54,12 +54,16 @@ private val STRIP_SHAPE = RoundedCornerShape(14.dp)
 /** Colors of a strip or button drawn on the screen background, which is the accent while connected. */
 internal data class OnBackgroundColors(val container: Color, val content: Color)
 
-/** Neutral surface for strips and buttons: a light overlay on the accent while lit, a container tone otherwise. */
+/**
+ * The one neutral pair of the home screen: the theme surface, or the translucent overlay while the
+ * screen carries the subscription color. Built once by [HomeScreen] and handed to every block below
+ * the card, so no block drifts back to a tinted container and the accent stays on the card.
+ */
 @Composable
-internal fun neutralColors(lit: Boolean): OnBackgroundColors = if (lit) {
+internal fun homeNeutralSurface(lit: Boolean): OnBackgroundColors = if (lit) {
     OnBackgroundColors(Color.White.copy(alpha = HOME_ON_ACCENT_OVERLAY), Color.White)
 } else {
-    OnBackgroundColors(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface)
+    OnBackgroundColors(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface)
 }
 
 /** Orange "needs attention" tone of the mockup; fixed so it reads the same with dynamic color. */
@@ -118,6 +122,7 @@ internal fun formatHomeDate(millis: Long): String {
 internal fun HomeIssueStrip(
     issue: HomeIssue,
     lit: Boolean,
+    neutral: OnBackgroundColors,
     onOtherServer: () -> Unit,
     onAllowVpn: () -> Unit,
     modifier: Modifier = Modifier,
@@ -138,11 +143,8 @@ internal fun HomeIssueStrip(
     }
     // A failed update is calm; every other issue is orange. On the accent both become the light overlay.
     val colors = when {
-        lit -> neutralColors(lit = true)
-        issue is HomeIssue.UpdateFailed -> OnBackgroundColors(
-            MaterialTheme.colorScheme.surfaceContainerHigh,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        lit -> neutral
+        issue is HomeIssue.UpdateFailed -> OnBackgroundColors(neutral.container, MaterialTheme.colorScheme.onSurfaceVariant)
         else -> warnColors()
     }
     Surface(
@@ -179,11 +181,10 @@ internal fun HomeIssueStrip(
 internal fun HomeAnnounceStrip(
     cardId: String,
     text: String,
-    lit: Boolean,
+    colors: OnBackgroundColors,
     modifier: Modifier = Modifier,
 ) {
     var expanded by rememberSaveable(cardId) { mutableStateOf(false) }
-    val colors = neutralColors(lit)
     val toggleLabel = stringResource(if (expanded) R.string.home_announce_collapse else R.string.home_announce_expand)
     val state = stringResource(if (expanded) R.string.home_announce_expanded else R.string.home_announce_collapsed)
     HomeTile(
@@ -225,11 +226,10 @@ internal fun routingPresetLabelRes(preset: RoutingType?): Int = when (preset) {
 internal fun HomeRulesRow(
     presetLoaded: Boolean,
     preset: RoutingType?,
-    lit: Boolean,
+    colors: OnBackgroundColors,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = neutralColors(lit)
     val chooseLabel = stringResource(R.string.home_rules_choose)
     HomeTile(
         colors = colors,

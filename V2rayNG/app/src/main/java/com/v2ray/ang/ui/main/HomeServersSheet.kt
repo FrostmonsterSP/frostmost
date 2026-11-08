@@ -8,13 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -31,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,12 +44,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -116,6 +121,9 @@ internal fun rememberHomeDialogs(onAction: (MainAction) -> Unit): HomeDialogs {
     return remember { HomeDialogs { action -> latest(action) } }
 }
 
+/** Air between the last server row and the bar that covers the bottom of the list. */
+private val LIST_END_GAP = 16.dp
+
 /**
  * Server drawer: the collapsed header shows the current server with "Check" and "Restart"; pulled
  * up it holds the existing server list of the selected group and its list menu (sort, locate,
@@ -153,15 +161,41 @@ internal fun ServersSheet(
     LaunchedEffect(groupId) { if (query.isNotEmpty()) closeSearch() }
     val lazyListStates = remember { mutableStateMapOf<String, LazyListState>() }
     val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
-    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // The bottom of the sheet is under two layers this list does not size itself: the bars the
+    // Column below consumes on the window (navigation bar, or the IME while the search field is
+    // open) and the collapsed header that stays on screen on top of the list. Measure both and pad
+    // the list by them, so its last row clears both however far the sheet is dragged and whether or
+    // not a keyboard is up; the list then needs no system-bar padding of its own.
+    val density = LocalDensity.current
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    var sheetSize by remember { mutableStateOf(IntSize.Zero) }
+    val bottomBarsPx = with(density) {
+        WindowInsets.safeDrawing
+            .only(WindowInsetsSides.Bottom)
+            .asPaddingValues()
+            .calculateBottomPadding()
+            .roundToPx()
+    }
+    // Ceiling at the sheet height: with the IME open on an expanded sheet the consumed bars can be
+    // taller than the sheet, and content padding larger than that would push the list out of view.
+    val listBottomPx = (headerHeightPx + bottomBarsPx).coerceIn(0, sheetSize.height)
+    val listBottom = with(density) { listBottomPx.toDp() }
 
     Column(
         Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.8f)
             .imePadding()
+            .onSizeChanged { sheetSize = it }
     ) {
-        Column(Modifier.onSizeChanged { onHeaderHeight(it.height) }) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .onSizeChanged {
+                    headerHeightPx = it.height
+                    onHeaderHeight(it.height)
+                }
+        ) {
             val toggleLabel = stringResource(if (open) R.string.home_servers_hide else R.string.home_servers_show)
             Box(
                 Modifier
@@ -263,7 +297,7 @@ internal fun ServersSheet(
                     usageInfo = null,
                     groupTitle = "",
                     onOpenLink = { url -> onAction(MainAction.OpenSubscriptionLink(url)) },
-                    contentPadding = PaddingValues(bottom = navBottom + 16.dp),
+                    contentPadding = PaddingValues(bottom = listBottom + LIST_END_GAP),
                 )
             }
         }

@@ -57,7 +57,7 @@ private val CARD_SHAPE = RoundedCornerShape(24.dp)
 private val POWER_SHAPE = RoundedCornerShape(26.dp)
 private val ACTION_SHAPE = RoundedCornerShape(14.dp)
 
-internal fun HomeCard.accentColor(): Color = Color(HOME_ACCENTS[accent])
+internal fun HomeCard.accentColor(dark: Boolean): Color = Color(accentColor(accent, dark))
 
 /** What the active card shows about the connection; built by [HomeScreen] from the UI state. */
 internal data class HomeConnection(
@@ -103,9 +103,11 @@ internal fun HomeSubscriptionRow(
     ) {
         items(cards, key = { it.id }) { card ->
             val selected = card.id == shownId
-            val accent = card.accentColor()
+            val accent = card.accentColor(LocalDarkTheme.current)
             val (container, content, dot) = when {
-                lit && selected -> Triple(Color.White, accent, accent)
+                // On the coloured sheet every chip is the calm translucent one, and the dot carries
+                // the subscription color; the inactive chips on the neutral sheet keep their own.
+                lit && selected -> Triple(Color.White.copy(alpha = HOME_ON_ACCENT_OVERLAY), Color.White, Color.White)
                 lit -> Triple(Color.White.copy(alpha = HOME_ON_ACCENT_OVERLAY), Color.White, Color.White)
                 selected -> Triple(accent, Color.White, Color.White)
                 else -> Triple(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface, accent)
@@ -273,11 +275,13 @@ private fun HomeSubscriptionCard(
     onConfigure: () -> Unit,
 ) {
     val dark = LocalDarkTheme.current
-    val accent = card.accentColor()
+    val accent = card.accentColor(dark)
     val onCard = lit && active
     val colors = if (onCard) {
         OnBackgroundColors(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface)
     } else {
+        // White text on the accent block, plainly stated: the block keeps its color under dynamic
+        // color too, so the theme's own "on surface" would be the wrong tone here.
         OnBackgroundColors(accent, Color.White)
     }
     val status = if (active) connection.status else HomeStatus.DISCONNECTED
@@ -288,7 +292,8 @@ private fun HomeSubscriptionCard(
         status == HomeStatus.CONNECTED -> okColor
         status == HomeStatus.CONNECTING || status == HomeStatus.SWITCHING -> busyColor
         status == HomeStatus.FAILED -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurface
+        // Accomplished on the light card in either theme; the dark on-surface was lost on it.
+        else -> if (dark) Color(0xFF1C1B1F) else MaterialTheme.colorScheme.onSurface
     }
     val selectLabel = stringResource(R.string.home_card_select)
     val cardName = stringResource(R.string.home_card_named, card.name)
@@ -444,7 +449,7 @@ private fun PowerButton(
 internal fun HomeActionRow(
     card: HomeCard,
     issue: HomeIssue?,
-    lit: Boolean,
+    colors: OnBackgroundColors,
     updating: Boolean,
     onUpdate: () -> Unit,
     onOpenLink: (String) -> Unit,
@@ -472,8 +477,8 @@ internal fun HomeActionRow(
                     { card.info?.supportUrl?.let(onOpenLink); Unit },
                 )
             }
-            val colors = when {
-                action != hot -> neutralColors(lit)
+            val tile = when {
+                action != hot -> colors
                 action == HomeAction.UPDATE -> OnBackgroundColors(
                     MaterialTheme.colorScheme.primaryContainer,
                     MaterialTheme.colorScheme.onPrimaryContainer,
@@ -481,10 +486,10 @@ internal fun HomeActionRow(
                 else -> warnColors()
             }
             HomeTile(
-                colors = colors,
+                colors = tile,
                 modifier = Modifier.weight(1f),
                 shape = ACTION_SHAPE,
-                border = if (action == hot) BorderStroke(2.dp, colors.content) else null,
+                border = if (action == hot) BorderStroke(2.dp, tile.content) else null,
                 onClick = onClick,
             ) {
                 Column(
