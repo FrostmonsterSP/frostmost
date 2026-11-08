@@ -80,6 +80,40 @@ internal fun buildSubscriptionInfoUiModel(
 }
 
 /**
+ * How much of the expiry warning window is left, for the card's expiry bar; null means no bar.
+ *
+ * The bar is **not** the paid period. A subscription panel publishes only the end date, never the
+ * purchase or start date, so "share of the paid month" cannot be computed at all: any bar built
+ * that way would invent its starting point. The bar therefore measures the warning window
+ * [SUBSCRIPTION_EXPIRY_WINDOW_DAYS]: full while the end date is a month or more away, empty once it
+ * has passed, and shrinking in between. A bar that reads "a month left" is honest; one that reads
+ * "half the period used" would not be.
+ *
+ *  - null when [expireMillis] is null — the subscription never expires, so there is nothing to fill;
+ *  - 0f when [expired] or the end date is already behind [nowMillis] — an empty rail reads as
+ *    "nothing left" and matches the "expired on …" line next to it;
+ *  - otherwise `remaining / window`, clamped: a date beyond the window is a full bar, not an
+ *    overflow, because the bar cannot show anything above "a month".
+ */
+internal fun subscriptionExpiryProgress(
+    expireMillis: Long?,
+    expired: Boolean,
+    nowMillis: Long,
+): Float? {
+    if (expireMillis == null) return null
+    if (expired) return 0f
+    val remainingMillis = expireMillis - nowMillis
+    if (remainingMillis <= 0L) return 0f
+    return (remainingMillis.toDouble() / EXPIRY_WINDOW_MILLIS).toFloat().coerceIn(0f, 1f)
+}
+
+/** Days of notice before the end date that the expiry bar fills over. */
+internal const val SUBSCRIPTION_EXPIRY_WINDOW_DAYS = 30L
+
+private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
+private val EXPIRY_WINDOW_MILLIS = SUBSCRIPTION_EXPIRY_WINDOW_DAYS * MILLIS_PER_DAY
+
+/**
  * Fixed box on top of a subscription group showing the account information published by the
  * subscription panel: traffic, expiry date and shortcuts (support link, panel page, update).
  */

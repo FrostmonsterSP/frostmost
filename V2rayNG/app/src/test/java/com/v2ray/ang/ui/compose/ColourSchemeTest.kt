@@ -281,4 +281,107 @@ class ColourSchemeTest {
             assertTrue(overlayRatio >= TEXT, "white on overlaid accent ${accent.toString(16)} is $overlayRatio")
         }
     }
+
+    /**
+     * The controls of the neutral page must sit *on* it, not in it. The top-bar tile and the "Add"
+     * button used to take `frostPageColors()` and a translucent tonal surface respectively, so on
+     * the light theme they were the page's own `background` and the page's own tone: the tiles
+     * dissolved and the "Add" button read as a black slab at the top of the screen.
+     */
+    @Test
+    fun neutralTopBarControlsSeparateFromThePage() {
+        // Light: surfaceContainerHigh #EEEBED on background #FCF8FA, and the filled primary pair.
+        assertTrue(
+            contrast(0xFFEEEBED, 0xFFFCF8FA) >= 1.10,
+            "light top-bar tile does not step off the page",
+        )
+        assertTrue(contrast(0xFFFFFFFF, 0xFF0B57D0) >= TEXT, "light onPrimary on primary")
+        // Dark: surfaceContainerHigh #282729 on background #141317.
+        assertTrue(
+            contrast(0xFF282729, 0xFF141317) >= 1.10,
+            "dark top-bar tile does not step off the page",
+        )
+        assertTrue(contrast(0xFF0A2E6E, 0xFFAAC7FF) >= TEXT, "dark onPrimary on primary")
+    }
+
+    /**
+     * A control on the subscription accent is the translucent white plate: it must stay lighter than
+     * every accent it is drawn over, and its white glyph must remain readable on all of them.
+     */
+    @Test
+    fun controlsOnTheAccentPageArePlatesAndNotSlabs() {
+        val accents = listOf(
+            0xFF2447C8, 0xFF6B2A80, 0xFF0E6A70, 0xFF1F6B3A, 0xFF8C1D40, 0xFF7A4A00,
+            0xFF3556D6, 0xFF853197, 0xFF0C6E75, 0xFF1E6B3C, 0xFFA1254C, 0xFF8F5600,
+        )
+        accents.forEach { accent ->
+            fun mix(shift: Int): Long {
+                val c = (accent shr shift) and 0xFF
+                return Math.round(c + (255 - c) * 0.10)
+            }
+            val plate = (0xFFL shl 24) or (mix(16) shl 16) or (mix(8) shl 8) or mix(0)
+            // Lighter than the page it sits on, so the plate reads as a control and not a hole.
+            assertTrue(
+                luminance(plate) > luminance(accent),
+                "plate on ${accent.toString(16)} is not lighter than the accent",
+            )
+            assertTrue(contrast(0xFFFFFFFF, plate) >= TEXT, "glyph on plate over ${accent.toString(16)}")
+        }
+    }
+
+    /**
+     * The round power control: a circle painted with the accent holds a white glyph, and the inverse
+     * surface holds the inverse on-colour. Both pairs were failures in the first place — the glyph
+     * used to be `colorScheme.primary` on a white plate, i.e. a pale blue on white in the dark theme.
+     */
+    @Test
+    fun powerControlGlyphReadsInEveryState() {
+        val accents = listOf(
+            0xFF2447C8, 0xFF6B2A80, 0xFF0E6A70, 0xFF1F6B3A, 0xFF8C1D40, 0xFF7A4A00,
+            0xFF3556D6, 0xFF853197, 0xFF0C6E75, 0xFF1E6B3C, 0xFFA1254C, 0xFF8F5600,
+        )
+        accents.forEach { accent ->
+            assertTrue(contrast(0xFFFFFFFF, accent) >= TEXT, "white glyph on accent ${accent.toString(16)}")
+        }
+        // Running: inverseSurface holds inverseOnSurface, in both themes.
+        assertTrue(contrast(0xFFF4EFF4, 0xFF313033) >= TEXT, "light inverse pair")
+        assertTrue(contrast(0xFF1C1B1F, 0xFFE5E1E6) >= TEXT, "dark inverse pair")
+    }
+
+    /**
+     * The hero card lights up while the VPN is on, so the accent every text and chip on it is
+     * measured against is no longer the palette entry: it is that entry lifted towards white by
+     * `HOME_CARD_LIT_WHITE`. The lift costs contrast, and at the palette's darkest entries the
+     * remaining margin is what decides the value — the worst lit card here is the light palette's
+     * violet at about 4.52:1, which is why the lift stays at 0.16 and why this test exists at all.
+     */
+    @Test
+    fun theLitHeroCardKeepsWhiteReadableAtEveryAccent() {
+        val accents = listOf(
+            0xFF3D57B2, 0xFF734B9D, 0xFF1F676F, 0xFF2C6944, 0xFF93435E, 0xFF825228,
+            0xFF3550B8, 0xFF6B4299, 0xFF14606A, 0xFF25603B, 0xFF8C3A55, 0xFF7A4A18,
+        )
+        accents.forEach { accent ->
+            listOf(false, true).forEach { lit ->
+                val card = colorOf(
+                    com.v2ray.ang.ui.main.homeCardHighlight(androidx.compose.ui.graphics.Color(accent), lit).container,
+                )
+                val ratio = contrast(0xFFFFFFFF, card)
+                assertTrue(ratio >= TEXT, "white on accent ${accent.toString(16)} lit=$lit is $ratio, needs $TEXT")
+                // Opaque in both states: the transparent-accent regression is not reopened by the lift.
+                assertTrue(card and 0xFF000000L == 0xFF000000L, "card on ${accent.toString(16)} is translucent")
+            }
+            // Lit is a step *of the same hue*, so it must be visibly lighter rather than a new colour:
+            // measured 1.42:1 at the flattest pairing, above the 1.10 step the scheme uses for a
+            // tonal separation that carries no information.
+            val rest = colorOf(
+                com.v2ray.ang.ui.main.homeCardHighlight(androidx.compose.ui.graphics.Color(accent), false).container,
+            )
+            val lit = colorOf(
+                com.v2ray.ang.ui.main.homeCardHighlight(androidx.compose.ui.graphics.Color(accent), true).container,
+            )
+            assertTrue(luminance(lit) > luminance(rest), "lit card at ${accent.toString(16)} is not lighter")
+            assertTrue(contrast(lit, rest) >= 1.30, "lit card at ${accent.toString(16)} is $lit, too near the rest")
+        }
+    }
 }

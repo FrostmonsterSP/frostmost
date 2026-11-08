@@ -345,6 +345,68 @@ class HomeModelsTest {
         return 0xFF000000L or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
+    /**
+     * The card lights up as a whole block: same hue, one step brighter, still fully opaque.
+     *
+     * A translucent result would be the exact failure that once turned the accent page into a wash
+     * (`Color(color.value.toLong())` rebuilds about 31% alpha), so opacity is asserted, not assumed.
+     */
+    @Test fun litCardIsALighterOpaqueStepOfTheSameAccent() {
+        listOf(HOME_ACCENTS, HOME_ACCENTS_DARK).forEach { palette ->
+            palette.forEach { accent ->
+                val rest = homeCardHighlight(Color(accent), connected = false)
+                val lit = homeCardHighlight(Color(accent), connected = true)
+
+                // At rest the plate is the palette entry itself, with white on it.
+                assertEquals(argbOf(Color(accent)), argbOf(rest.container))
+                assertEquals(0xFFFFFFFFL, argbOf(rest.content))
+                assertEquals(0xFFFFFFFFL, argbOf(lit.content))
+
+                // Lit: opaque, and measurably lighter rather than merely different.
+                assertEquals(0xFFL, (argbOf(lit.container) shr 24) and 0xFF)
+                assertTrue(
+                    contrastWithWhite(argbOf(lit.container)) != contrastWithWhite(argbOf(rest.container)),
+                    "the lit card must differ from the resting one at ${accent.toString(16)}",
+                )
+                assertTrue(
+                    luminanceOf(argbOf(lit.container)) > luminanceOf(argbOf(rest.container)),
+                    "the lit card must be lighter at ${accent.toString(16)}",
+                )
+            }
+        }
+    }
+
+    /** White text is the whole readable content of the card, so both states must clear AA. */
+    @Test fun whiteTextClearsAaOnTheLitCardAtEveryAccent() {
+        listOf(HOME_ACCENTS, HOME_ACCENTS_DARK).forEach { palette ->
+            palette.forEach { accent ->
+                listOf(false, true).forEach { on ->
+                    val ratio = contrastWithWhite(argbOf(homeCardHighlight(Color(accent), on).container))
+                    assertTrue(ratio >= 4.5, "white on ${accent.toString(16)} lit=$on is $ratio")
+                }
+            }
+        }
+    }
+
+    /** Mixing towards white keeps full opacity even when the fraction is nonsense. */
+    @Test fun mixingTowardsWhiteStaysOpaque() {
+        listOf(-1f, 0f, 0.5f, 1f, 2f).forEach { fraction ->
+            val mixed = Color(HOME_ACCENTS[0]).mixTowardsWhite(fraction)
+            assertEquals(0xFFL, (argbOf(mixed) shr 24) and 0xFF)
+        }
+        assertEquals(argbOf(Color(HOME_ACCENTS[0])), argbOf(Color(HOME_ACCENTS[0]).mixTowardsWhite(0f)))
+        assertEquals(0xFFFFFFFFL, argbOf(Color(HOME_ACCENTS[0]).mixTowardsWhite(1f)))
+    }
+
+    /** WCAG relative luminance of an opaque colour; used only to order two states of one accent. */
+    private fun luminanceOf(argb: Long): Double {
+        fun channel(shift: Int): Double {
+            val c = ((argb shr shift) and 0xFF) / 255.0
+            return if (c <= 0.03928) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
+        }
+        return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0)
+    }
+
     @Test fun accentPageIsOffUnlessTheVpnRuns() {
         val off = homeAccentPage(Color(HOME_ACCENTS[0]), connected = false)
         assertFalse(off.onAccent)
@@ -469,5 +531,33 @@ class HomeModelsTest {
     @Test fun runningConnectionCanAlwaysBeStopped() {
         // Stopping is never a queued action, so nothing refuses it; the hero must stay reachable.
         assertTrue(canStartFromOff(isRunning = true, connecting = false, powerEnabled = true))
+    }
+
+    /**
+     * A card that is not the shown one is a preview. It must not borrow the running VPN's state: a
+     * neighbour painted "connected", or carrying the shown subscription's server under its own name,
+     * is the one wrong reading the swipe pager can produce.
+     */
+    @Test fun aPreviewCardReportsNoConnection() {
+        val running = HomeConnection(
+            status = HomeStatus.CONNECTED,
+            serverName = "NED I PRYAMOY TLS",
+            delayMillis = 53L,
+            isRunning = true,
+            powerEnabled = true,
+            isConnecting = false,
+        )
+        val preview = running.disconnected(serverName = null)
+        assertEquals(HomeStatus.DISCONNECTED, preview.status)
+        assertFalse(preview.isRunning)
+        assertFalse(preview.isConnecting)
+        assertEquals(null, preview.serverName)
+        assertEquals(null, preview.delayMillis)
+        // A preview cannot start anything: the guard refuses whatever the card's own flag says.
+        assertFalse(preview.powerEnabled)
+        assertFalse(canStartFromOff(preview.isRunning, preview.isConnecting, preview.powerEnabled))
+        // The shown card is untouched by the conversion.
+        assertTrue(running.isRunning)
+        assertEquals(HomeStatus.CONNECTED, running.status)
     }
 }
