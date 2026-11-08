@@ -116,7 +116,7 @@ Every APK is published next to a detached signature (`<apk>.sig`) and the fork's
 
 ```sh
 gpg --import frostmost-public-key.asc
-gpg --verify frostmost_0.9.0rc_arm64-v8a.apk.sig frostmost_0.9.0rc_arm64-v8a.apk
+gpg --verify frostmost_0.9.1rc_arm64-v8a.apk.sig frostmost_0.9.1rc_arm64-v8a.apk
 ```
 
 A good result prints `Good signature` and the fingerprint above. If the fingerprint differs, stop:
